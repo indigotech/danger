@@ -12,31 +12,28 @@ module Danger
     describe 'with Dangerfile' do
       before do
         @dangerfile = testing_dangerfile
-        @my_plugin = @dangerfile.my_plugin
+        @my_plugin = @dangerfile.taqtile
       end
 
-      # Some examples for writing tests
-      # You should replace these with your own.
+      it 'should warn when CPD number increases' do
 
-      it "Warns on a monday" do
-        monday_date = Date.parse("2016-07-11")
-        allow(Date).to receive(:today).and_return monday_date
+        allow(@my_plugin.cpd_runner).to receive(:increased?).and_return true
 
-        @my_plugin.warn_on_mondays
+        @my_plugin.warn_on_cpd
 
-        expect(@dangerfile.status_report[:warnings]).to eq(["Trying to merge code on a Monday"])
+        expect(@dangerfile.status_report[:warnings]).to eq(["This PR has more duplicated code than your target branch, therefore it could have some code quality issues"])
       end
 
-      it "Does nothing on a tuesday" do
-        monday_date = Date.parse("2016-07-12")
-        allow(Date).to receive(:today).and_return monday_date
+      it 'should not warn when CPD number stays the same' do
 
-        @my_plugin.warn_on_mondays
+        allow(@my_plugin.cpd_runner).to receive(:increased?).and_return false
+
+        @my_plugin.warn_on_cpd
 
         expect(@dangerfile.status_report[:warnings]).to eq([])
       end
 
     end
+
   end
 end
-
