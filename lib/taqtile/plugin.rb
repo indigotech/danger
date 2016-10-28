@@ -33,7 +33,11 @@ module Danger
     # @return   [Array<String>]
     #
     def warn_on_cpd
-      warn 'This PR has more duplicated code than your target branch, therefore it could have some code quality issues' if @cpd_runner.increased?
+      if @cpd_runner.installed?
+        warn 'This PR has more duplicated code than your target branch, therefore it could have some code quality issues.' if @cpd_runner.increased?
+      else
+        warn 'PMD is not currently installed. Copy/Paste Detector can not be executed.'
+      end
     end
 
     def all

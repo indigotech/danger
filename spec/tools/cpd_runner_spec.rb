@@ -47,6 +47,32 @@ module Danger
 
       end
 
+      describe 'Instalation' do
+
+        it 'should return false for installation when "which pmd" returns path' do
+
+          runner = CPDRunner.new
+
+          # mock check for pmd instalaton
+          allow(runner).to receive(:`).with("which pmd").and_return("anything can be returned here")
+
+          # failing on purpose
+          expect(runner.installed?).to eq(true)
+        end
+
+        it 'should return false for installation when "which pmd" returns empty' do
+
+          runner = CPDRunner.new
+
+          # mock check for pmd instalaton
+          allow(runner).to receive(:`).with("which pmd").and_return("")
+
+          # failing on purpose
+          expect(runner.installed?).to eq(false)
+        end
+
+      end
+
       describe 'Bash commands' do
 
         it 'should call pmd cpd on current branch with correct parameters' do

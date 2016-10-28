@@ -2,13 +2,11 @@ module Danger
 
   module Tools
 
-    # Runs PMD's Copy-Paste Detector at current source and compare it to
-    # other branches value. More info at
-    # http://pmd.sourceforge.net/pmd-4.3.0/cpd.html
+    # Loads settings.yml.erb file contents
     #
-    # @example Compare current code with code on branch 'master'
+    # @example Loading settings file
     #
-    #          cpd = CPDRunner.new branch: 'master'
+    #          settings = Settings.l
     #          cpd.compare()
     #
     class CPDRunner
@@ -51,10 +49,6 @@ module Danger
         @branch = params[:branch] || "master"
         @repository = params[:repository] || ENV['TRAVIS_REPO_SLUG'] || nil
         @super
-      end
-
-      def installed?
-        `which pmd`.strip.empty? == false
       end
 
       def increased?
