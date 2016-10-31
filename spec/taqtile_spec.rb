@@ -12,31 +12,71 @@ module Danger
     describe 'with Dangerfile' do
       before do
         @dangerfile = testing_dangerfile
-        @my_plugin = @dangerfile.my_plugin
+        @my_plugin = @dangerfile.taqtile
       end
 
-      # Some examples for writing tests
-      # You should replace these with your own.
+      describe 'Run' do
 
-      it "Warns on a monday" do
-        monday_date = Date.parse("2016-07-11")
-        allow(Date).to receive(:today).and_return monday_date
+        it 'should call each validation once' do
 
-        @my_plugin.warn_on_mondays
+          allow(@my_plugin).to receive(:warn_on_cpd).and_return true
 
-        expect(@dangerfile.status_report[:warnings]).to eq(["Trying to merge code on a Monday"])
+          expect(@my_plugin).to receive(:warn_on_cpd).once
+          @my_plugin.run
+
+        end
+
       end
 
-      it "Does nothing on a tuesday" do
-        monday_date = Date.parse("2016-07-12")
-        allow(Date).to receive(:today).and_return monday_date
+      describe 'CPD' do
 
-        @my_plugin.warn_on_mondays
 
-        expect(@dangerfile.status_report[:warnings]).to eq([])
+        it 'should warn when CPD number increases' do
+
+          allow(@my_plugin.cpd_runner).to receive(:increased?).and_return true
+          allow(@my_plugin.cpd_runner).to receive(:installed?).and_return true
+
+          @my_plugin.send(:warn_on_cpd)
+
+          expect(@dangerfile.status_report[:warnings]).to eq(["This PR has more duplicated code than your target branch, therefore it could have some code quality issues."])
+        end
+
+        it 'should not warn when CPD number stays the same' do
+
+          allow(@my_plugin.cpd_runner).to receive(:increased?).and_return false
+          allow(@my_plugin.cpd_runner).to receive(:installed?).and_return true
+
+          @my_plugin.send(:warn_on_cpd)
+
+          expect(@dangerfile.status_report[:warnings]).to eq([])
+        end
+
+        it 'should warn when PMD is not installed' do
+
+          allow(@my_plugin.cpd_runner).to receive(:installed?).and_return false
+
+          @my_plugin.send(:warn_on_cpd)
+
+          expect(@dangerfile.status_report[:warnings]).to eq(["PMD is not currently installed. Copy/Paste Detector can not be executed."])
+        end
+
+        # # Study how to handle backtick exceptions
+        # # http://blog.bigbinary.com/2012/10/18/backtick-system-exec-in-ruby.html
+        # it 'should warn when exception happens' do
+        #
+        #   error = 'Mocke error message'
+        #
+        #   allow(@my_plugin.cpd_runner).to receive(:increased?).and_raise error
+        #   allow(@my_plugin.cpd_runner).to receive(:installed?).and_return true
+        #
+        #   @my_plugin.send(:warn_on_cpd)
+        #
+        #   expect(@dangerfile.status_report[:warnings]).to eq(["Error while executing Copy/Paste Detector: #{error}"])
+        # end
+
       end
 
     end
+
   end
 end
-
