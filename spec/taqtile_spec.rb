@@ -15,33 +15,65 @@ module Danger
         @my_plugin = @dangerfile.taqtile
       end
 
-      it 'should warn when CPD number increases' do
+      describe 'Run' do
 
-        allow(@my_plugin.cpd_runner).to receive(:increased?).and_return true
-        allow(@my_plugin.cpd_runner).to receive(:installed?).and_return true
+        it 'should call each validation once' do
 
-        @my_plugin.warn_on_cpd
+          allow(@my_plugin).to receive(:warn_on_cpd).and_return true
 
-        expect(@dangerfile.status_report[:warnings]).to eq(["This PR has more duplicated code than your target branch, therefore it could have some code quality issues."])
+          expect(@my_plugin).to receive(:warn_on_cpd).once
+          @my_plugin.run
+
+        end
+
       end
 
-      it 'should not warn when CPD number stays the same' do
+      describe 'CPD' do
 
-        allow(@my_plugin.cpd_runner).to receive(:increased?).and_return false
-        allow(@my_plugin.cpd_runner).to receive(:installed?).and_return true
 
-        @my_plugin.warn_on_cpd
+        it 'should warn when CPD number increases' do
 
-        expect(@dangerfile.status_report[:warnings]).to eq([])
-      end
+          allow(@my_plugin.cpd_runner).to receive(:increased?).and_return true
+          allow(@my_plugin.cpd_runner).to receive(:installed?).and_return true
 
-      it 'should warn when PMD is not installed' do
+          @my_plugin.send(:warn_on_cpd)
 
-        allow(@my_plugin.cpd_runner).to receive(:installed?).and_return false
+          expect(@dangerfile.status_report[:warnings]).to eq(["This PR has more duplicated code than your target branch, therefore it could have some code quality issues."])
+        end
 
-        @my_plugin.warn_on_cpd
+        it 'should not warn when CPD number stays the same' do
 
-        expect(@dangerfile.status_report[:warnings]).to eq(["PMD is not currently installed. Copy/Paste Detector can not be executed."])
+          allow(@my_plugin.cpd_runner).to receive(:increased?).and_return false
+          allow(@my_plugin.cpd_runner).to receive(:installed?).and_return true
+
+          @my_plugin.send(:warn_on_cpd)
+
+          expect(@dangerfile.status_report[:warnings]).to eq([])
+        end
+
+        it 'should warn when PMD is not installed' do
+
+          allow(@my_plugin.cpd_runner).to receive(:installed?).and_return false
+
+          @my_plugin.send(:warn_on_cpd)
+
+          expect(@dangerfile.status_report[:warnings]).to eq(["PMD is not currently installed. Copy/Paste Detector can not be executed."])
+        end
+
+        # # Study how to handle backtick exceptions
+        # # http://blog.bigbinary.com/2012/10/18/backtick-system-exec-in-ruby.html
+        # it 'should warn when exception happens' do
+        #
+        #   error = 'Mocke error message'
+        #
+        #   allow(@my_plugin.cpd_runner).to receive(:increased?).and_raise error
+        #   allow(@my_plugin.cpd_runner).to receive(:installed?).and_return true
+        #
+        #   @my_plugin.send(:warn_on_cpd)
+        #
+        #   expect(@dangerfile.status_report[:warnings]).to eq(["Error while executing Copy/Paste Detector: #{error}"])
+        # end
+
       end
 
     end
