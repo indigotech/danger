@@ -12,6 +12,12 @@ warn("PR is classed as Work in Progress") if github.pr_title.include? "[WIP]"
 # Warn when there is a big PR
 warn("Big PR") if git.lines_of_code > 500
 
+# Mainly to encourage writing up some reasoning about the PR, rather than
+# just leaving a title
+if github.pr_body.length < 5
+  fail "Please provide a summary in the Pull Request description"
+end
+
 warn("`Gemfile` modified") if git.modified_files.include?("Gemfile")
 warn("`Gemfile.lock` modified") if git.modified_files.include?("Gemfile.lock")
 warn("`travis.yml` modified") if git.modified_files.include?(".travis.yml")
@@ -41,12 +47,6 @@ warn("`Procfile` modified") if git.modified_files.include?("Procfile")
 warn("`npm-shrinkwrap.json` modified") if git.modified_files.include?("npm-shrinkwrap.json")
 warn("`node_modules` modified") if git.modified_files.include?("node_modules")
 warn("`env.coffee` modified") if git.modified_files.include?("tasks/options/env.coffee")
-
-# Mainly to encourage writing up some reasoning about the PR, rather than
-# just leaving a title
-if github.pr_body.length < 5
-  fail "Please provide a summary in the Pull Request description"
-end
 
 git.modified_files.each do |file|
 
@@ -142,8 +142,6 @@ end
 #    Android SECTION   #
 ########################
 
-warn("'Cakefile' modified") if git.modified_files.include?("Cakefile")
-
 git.modified_files.each do |file|
   ext = File.extname(file)
   case ext
@@ -153,4 +151,18 @@ git.modified_files.each do |file|
   end
   # Warn when a FileManifest.xml is modified
   warn("`#{file}` was modified") if file =~ /Manifest\.xml/
+end
+
+
+########################
+#      Web SECTION     #
+########################
+
+git.modified_files.each do |file|
+  ext = File.extname(file)
+  case ext
+  # Warn when a file .style is modified
+  when ".styl"
+    warn("`#{file}` was modified")
+  end
 end
