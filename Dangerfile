@@ -18,22 +18,32 @@ if github.pr_body.length < 5
   fail "Please provide a summary in the Pull Request description"
 end
 
-warn("`Gemfile` modified") if git.modified_files.include?("Gemfile")
-warn("`Gemfile.lock` modified") if git.modified_files.include?("Gemfile.lock")
-warn("`travis.yml` modified") if git.modified_files.include?(".travis.yml")
-warn("`.gitignore` modified") if git.modified_files.include?(".gitignore")
+# Common files
+files_to_check = ["Gemfile.lock", ".travis.yml", ".gitignore"]
+# Node files
+files_to_check += ["yarn.lock", "docker-compose.yml", "Procfile", "npm-shrinkwrap.json", "node_modules", "tasks/options/env.coffee"]
+# iOS files
+files_to_check += ["Cakefile", "fastlane/settings.yml.erb", "fastlane/Fastfile", "Podfile.lock"]
+# Check if files were modified
+(git.modified_files & files_to_check).each do |file|
+  warn("`#{file}` modified")
+end
 
 # Warn if 'Gemfile' was modified and 'Gemfile.lock' was not
 if git.modified_files.include?("Gemfile")
   if !git.modified_files.include?("Gemfile.lock")
     warn("`Gemfile` was modified but `Gemfile.lock` was not")
+  else
+    warn("`Gemfile` modified")
   end
 end
 
-# Make sure resolves merges or rebases conflict issues
 git.modified_files.each do |file|
   File.foreach(file) do |line|
+    # Make sure resolves merges or rebases conflict issues
     fail("Commited file without resolving merges/rebases conflict issues on `#{file}` - `#{line}`") if line =~ />>>>>>>/
+    # Look for Amazon Secret keys in modified files
+    warn("Amazon secret key hardcoded in `#{file}` at `#{line}`") if line =~ /(?<![A-Za-z0-9\/+=])[A-Za-z0-9\/+=]{40}(?![A-Za-z0-9\/+=])/
   end
 end
 
@@ -41,20 +51,11 @@ end
 #    Node SECTION      #
 ########################
 
-warn("`yarn.lock` modified") if git.modified_files.include?("yarn.lock")
-warn("`docker-compose.yml` modified") if git.modified_files.include?("docker-compose.yml")
-warn("`Procfile` modified") if git.modified_files.include?("Procfile")
-warn("`npm-shrinkwrap.json` modified") if git.modified_files.include?("npm-shrinkwrap.json")
-warn("`node_modules` modified") if git.modified_files.include?("node_modules")
-warn("`env.coffee` modified") if git.modified_files.include?("tasks/options/env.coffee")
-
 git.modified_files.each do |file|
 
   File.foreach(file) do |line|
-    # Look for Amazon Secret keys in modified files
-    warn("Amazon secret key hardcoded in `#{file}` at `#{line}`") if line =~ /(?<![A-Za-z0-9\/+=])[A-Za-z0-9\/+=]{40}(?![A-Za-z0-9\/+=])/
     # Look for 'npm install -g'
-    warn("`npm install -g` was found in `#{file}` at `#{line}`. Flag `-g` is not recommended.") if line =~ /npm install -g/
+    warn("'npm install -g' was found in `#{file}` at `#{line}`. Flag `-g` is not recommended.") if line =~ /npm install -g/
   end
 
   # Look for files with spefic extension in modified files
@@ -70,17 +71,17 @@ end
 
 # Warn if 'console.log' was added
 diff = github.pr_diff
-warn("`console.log` added") if diff =~ /\+\s*console\.log/
+warn("'console.log' added") if diff =~ /\+\s*console\.log/
 
 # Warn if 'package.json' was modified but 'yarn.lock' or 'shrinkwrap' was not
 yarn_exist = File.file?("yarn.lock")
 shrinkwrap_exist = File.file?("shrinkwrap")
 if git.modified_files.include?("package.json")
   if yarn_exist && !git.modified_files.include?("yarn.lock")
-    warn("`package.json` was modified but `yarn.lock` was not")
+    warn("'package.json' was modified but 'yarn.lock' was not")
   end
   if shrinkwrap_exist && !git.modified_files.include?("shrinkwrap")
-    warn("`package.json` was modified but `shrinkwrap` was not")
+    warn("'package.json' was modified but 'shrinkwrap' was not")
   end
 end
 
@@ -88,14 +89,12 @@ end
 #      iOS SECTION     #
 ########################
 
-warn("`Cakefile` modified") if git.modified_files.include?("Cakefile")
-warn("`settings.yml.erb` modified") if git.modified_files.include?("fastlane/settings.yml.erb")
-warn("`Fastfile` modified") if git.modified_files.include?("fastlane/Fastfile")
-
 # Warn if 'Podfile' was modified but 'Podfile.lock' was not
 if git.modified_files.include?("Podfile")
   if !git.modified_files.include?("Podfile.lock")
     warn("`Podfile` was modified but 'Podfile.lock' was not")
+  else
+    warn("`Podfile` was modified")
   end
 end
 
@@ -152,7 +151,6 @@ git.modified_files.each do |file|
   # Warn when a FileManifest.xml is modified
   warn("`#{file}` was modified") if file =~ /Manifest\.xml/
 end
-
 
 ########################
 #      Web SECTION     #
