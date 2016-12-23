@@ -142,6 +142,14 @@ git.modified_files.each do |file|
     # Warn developers to use another alternatives
     warn("`fatalError` was added in `#{file}` at line `#{line}` is not possible use error handlers or throw an exception?") if line =~ /fatalError\(/
   end
+
+  ext = File.extname(file)
+  puts "ext = #{ext}"
+  case ext
+  # Warn when forced unwrapping is used
+  when ".swift"
+    warn("Possible forced unwrapping found in `#{file}` at `#{line}`") if line =~ /\w!\s*(.|\(|\{|\[|\]|\}|\))/m
+  end
 end
 
 
