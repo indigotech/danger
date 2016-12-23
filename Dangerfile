@@ -131,6 +131,8 @@ end
 File.foreach("Podfile") do |line|
   # Warn pods being loaded from external git repos
   message("`Podfile` has pods being loaded from external git repos at `#{line}`") if line =~ /:git/
+  # Warn when no version is specified
+  warn("No version specified for pod at `#{line}`") if line =~ /pod\s*'[a-zA-Z0-9]*'(?!,)/
 end
 
 git.modified_files.each do |file|
@@ -144,7 +146,6 @@ git.modified_files.each do |file|
   end
 
   ext = File.extname(file)
-  puts "ext = #{ext}"
   case ext
   # Warn when forced unwrapping is used
   when ".swift"
