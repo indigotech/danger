@@ -139,17 +139,17 @@ git.modified_files.each do |file|
   File.foreach(file) do |line|
     # Warn developers things that need to be done
     warn("`TODO` was added in `#{file}` at line `#{line}`") if line =~ /^(#\s*.*?|\/\/\s*.*?)(TO\s*.*?DO)/mi
-    # Warn print was added
-    warn("`print(\"\")` was added in `#{file}` at line `#{line}`") if line =~ /print\(""\)/
-    # Warn developers to use another alternatives
-    warn("`fatalError` was added in `#{file}` at line `#{line}` is not possible use error handlers or throw an exception?") if line =~ /fatalError\(/
-  end
 
-  ext = File.extname(file)
-  case ext
-  # Warn when forced unwrapping is used
-  when ".swift"
-    warn("Possible forced unwrapping found in `#{file}` at `#{line}`") if line =~ /\w!\s*(.|\(|\{|\[|\]|\}|\))/m
+    ext = File.extname(file)
+    case ext
+    when ".swift"
+      # Warn when forced unwrapping is used
+      warn("Possible forced unwrapping found in `#{file}` at `#{line}`") if line =~ /\w!\s*(.|\(|\{|\[|\]|\}|\))/m
+      # Warn print was added
+      warn("`print(\"\")` was added in `#{file}` at line `#{line}`") if line =~ /print\(""\)/
+      # Warn developers to use another alternatives
+      warn("`fatalError` was added in `#{file}` at line `#{line}` is not possible use error handlers or throw an exception?") if line =~ /fatalError\(/
+    end
   end
 end
 
