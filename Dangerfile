@@ -85,6 +85,9 @@ if git.modified_files.include?("package.json")
   if shrinkwrap_exist && !git.modified_files.include?("shrinkwrap")
     warn("`package.json` was modified but `shrinkwrap` was not")
   end
+  # Fail when dependency version is used with `~` or `^`
+  diff = github.pr_diff
+  fail("Don't use `~` or `^` on dependencies version") if diff =~ /"[a-zA-Z0-9-]*":\s*"[~^]/
 end
 
 ########################
