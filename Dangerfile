@@ -49,6 +49,10 @@ git.modified_files.each do |file|
 end
 
 
+if @platform.nil
+  info("No platform has been provided to perform assertions")
+end
+
 ########################
 #   Node.JS SECTION    #
 ########################
