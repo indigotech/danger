@@ -1,20 +1,43 @@
 # danger-taqtile
 
-A description of danger-taqtile.
+Danger base file for Taqtile projects
 
-## Installation
+## Instalation
 
-    $ gem install danger-taqtile
+1. Create a `Gemfile` with
+```ruby
+source "https://rubygems.org"
+gem "danger"
+```
+1. Execte `$ bundle  install`
+1. Create a `Dangerfile` with
+```ruby
+@platform = "nodejs" # Possible platforms are "nodejs", "ios", "android" and "web"
+danger.import_dangerfile(github: "indigotech/danger", branch: "1.0.0")
+```
 
-## Usage
+## Usage Locally
 
-    Methods and attributes from this plugin are available in
-    your `Dangerfile` under the `taqtile` namespace.
+1. To test your PR locally, simply execute
+```bash
+$ bundle exec danger local
+```
 
-## Development
+## Usage on CI
 
-1. Clone this repo
-2. Run `bundle install` to setup dependencies.
-3. Run `bundle exec rake spec` to run the tests.
-4. Use `bundle exec guard` to automatically have tests run as you make changes.
-5. Make your changes.
+1. To execute on CI, add the following command preferably before building your code
+```bash
+$ bundle exec danger --dangerfile=path/to/Dangerfile
+```
+
+## Troubleshooting
+
+### It is asking me for a `DANGER_GITHUB_API_TOKEN`
+
+> Local repository was not found on GitHub. If you're trying to test a private repository please provide a valid API token through DANGER_GITHUB_API_TOKEN environment variable.
+
+1. Create a github [Personal Access Token](https://help.github.com/articles/creating-an-access-token-for-command-line-use/)
+2. Export it to an environment variable
+```bash
+$ export DANGER_GITHUB_API_TOKEN=your token here
+```
