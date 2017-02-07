@@ -166,14 +166,22 @@ if @platform == "ios"
   modified_files.each do |file|
     begin
       File.foreach(file) do |line|
+       line = line.gsub('\n','').strip
         # Warn developers things that need to be done
         warn("`TODO` was added in `#{file}` at line `#{line}`") if line =~ /^(#\s*.*?|\/\/\s*.*?)(TO\s*.*?DO)/mi
 
         ext = File.extname(file)
         case ext
         when ".swift"
+          # ignore commented lines
+          next if line =~ /^ *\/\//m
           # Warn when forced unwrapping is used
-          warn("Possible forced unwrapping found in `#{file}` at `#{line}`") if line =~ /\w!\s*(.|\(|\{|\[|\]|\}|\))/m && !(line =~ /@IBOutlet/m)
+          if line =~ /\w!\s*(.|\(|\{|\[|\]|\}|\))/m &&  #  check for any char followed by "!", ignoring if 
+            !(line =~ /@IBOutlet/m) && #  - line starts with "@IBOutlet"
+            !(line =~ /\".*!.*"/m) && #  - "!" is inside quotes (aka in a string)
+            !(line =~ /(var|func) [^ ]* *(:|->) *[^ ]*!/m)  #  - `var variable: AnyType!` or `func anyname() -> AnyType! {`
+            warn("Possible forced unwrapping found in `#{file}` at `#{line}`") 
+          end
           # Warn print was added
           warn("`print(\"\")` was added in `#{file}` at line `#{line}`") if line =~ /print\(""\)/
           # Warn developers to use another alternatives
