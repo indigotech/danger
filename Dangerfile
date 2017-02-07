@@ -52,6 +52,7 @@ end
 modified_files.each do |file|
   begin
     File.foreach(file) do |line|
+      line = line.gsub('\n','').strip
       # Make sure resolves merges or rebases conflict issues
       fail("Commited file without resolving merges/rebases conflict issues on `#{file}` - `#{line}`") if line =~ /^>>>>>>>/
       # Look for Amazon Secret keys in modified files
@@ -70,6 +71,7 @@ if @platform == "nodejs"
   modified_files.each do |file|
     begin
       File.foreach(file) do |line|
+        line = line.gsub('\n','').strip
         # Warn developers that they are not supposed to use this flag
         warn("`npm install` with flag `-g` was found in `#{file}` at `#{line}`. This is not recommended.") if line =~ /npm install -g/
       end
@@ -136,6 +138,7 @@ if @platform == "ios"
   plist_files_paths.each do |file|
     begin
       File.foreach(file) do |line|
+        line = line.gsub('\n','').strip
         # Warn that ATS Exception is set in plist
         warn("ATS Exception found in plist `#{file}`") if line =~ /NSAppTransportSecurity/
         # Warn that Landscape orientation is set in plist
@@ -154,6 +157,7 @@ if @platform == "ios"
 
   begin
     File.foreach("Podfile") do |line|
+      line = line.gsub('\n','').strip
       # Warn pods being loaded from external git repos
       message("`Podfile` has pods being loaded from external git repos at `#{line}`") if line =~ /:git/
       # Warn when no version is specified
@@ -166,7 +170,7 @@ if @platform == "ios"
   modified_files.each do |file|
     begin
       File.foreach(file) do |line|
-       line = line.gsub('\n','').strip
+        line = line.gsub('\n','').strip
         # Warn developers things that need to be done
         warn("`TODO` was added in `#{file}` at line `#{line}`") if line =~ /^(#\s*.*?|\/\/\s*.*?)(TO\s*.*?DO)/mi
 
