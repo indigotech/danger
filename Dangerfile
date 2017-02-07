@@ -1,4 +1,11 @@
 require 'find'
+
+platform = ENV['DANGER_PLATFORM']
+if platform.nil
+  info("No platform has been provided to perform assertions")
+end
+
+
 ########################
 #    COMMON SECTION    #
 ########################
@@ -48,16 +55,10 @@ git.modified_files.each do |file|
   end
 end
 
-
-if @platform.nil
-  info("No platform has been provided to perform assertions")
-end
-
 ########################
 #   Node.JS SECTION    #
 ########################
-if @platform == "nodejs"
-
+if platform == "nodejs"
 
   git.modified_files.each do |file|
 
@@ -102,7 +103,7 @@ end
 ########################
 #      iOS SECTION     #
 ########################
-if @platform == "ios"
+if platform == "ios"
 
   # Warn if 'Podfile' was modified but 'Podfile.lock' was not
   if git.modified_files.include?("Podfile")
@@ -170,7 +171,7 @@ end
 ########################
 #    Android SECTION   #
 ########################
-if @platform == "android"
+if platform == "android"
   git.modified_files.each do |file|
     ext = File.extname(file)
     case ext
@@ -186,7 +187,7 @@ end
 ########################
 #      Web SECTION     #
 ########################
-if @platform == "web"
+if platform == "web"
   git.modified_files.each do |file|
     ext = File.extname(file)
     case ext
