@@ -173,7 +173,7 @@ if @platform == "ios"
         case ext
         when ".swift"
           # Warn when forced unwrapping is used
-          warn("Possible forced unwrapping found in `#{file}` at `#{line}`") if line =~ /\w!\s*(.|\(|\{|\[|\]|\}|\))/m
+          warn("Possible forced unwrapping found in `#{file}` at `#{line}`") if line =~ /\w!\s*(.|\(|\{|\[|\]|\}|\))/m && !(line =~ /@IBOutlet/m)
           # Warn print was added
           warn("`print(\"\")` was added in `#{file}` at line `#{line}`") if line =~ /print\(""\)/
           # Warn developers to use another alternatives
