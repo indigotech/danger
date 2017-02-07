@@ -9,7 +9,7 @@ On your project root folder:
 1. Create a `Gemfile` with
 ```ruby
 source "https://rubygems.org"
-gem "danger", "~>4.2"
+gem "danger", "4.2.1"
 ```
 1. Execute `$ bundle  install`
 1. Create a `Dangerfile` with
