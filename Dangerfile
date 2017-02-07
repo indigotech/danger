@@ -131,11 +131,7 @@ if @platform == "ios"
   end
 
   check_next_line = false
-  plist_files_paths = []
-  app = @rootiOSFolder
-  Find.find("#{app}/Supporting\ Files") do |path|
-    plist_files_paths << path if path =~ /.*Info\.plist$/
-  end
+  plist_files_paths = modified_files.select { |path| path.include?("Supporting") && path =~ /.*Info\.plist$/ }
 
   plist_files_paths.each do |file|
     begin
