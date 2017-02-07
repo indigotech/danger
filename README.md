@@ -4,12 +4,14 @@ Danger base file for Taqtile projects
 
 ## Instalation
 
+On your project root folder:
+
 1. Create a `Gemfile` with
 ```ruby
 source "https://rubygems.org"
 gem "danger"
 ```
-1. Execte `$ bundle  install`
+1. Execute `$ bundle  install`
 1. Create a `Dangerfile` with
 ```ruby
 @platform = "nodejs" # Possible platforms are "nodejs", "ios", "android" and "web"
