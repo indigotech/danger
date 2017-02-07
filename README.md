@@ -1,20 +1,31 @@
 # danger-taqtile
 
-A description of danger-taqtile.
+Danger base file for Taqtile projects
 
-## Installation
+## Instalation
 
-    $ gem install danger-taqtile
+1. Create a `Gemfile` with
+```ruby
+source "https://rubygems.org"
+gem "danger"
+```
+1. Execte `$ bundle  install`
+1. Create a `Dangerfile` with
+```ruby
+@platform = "nodejs" # Possible platforms are "nodejs", "ios", "android" and "web"
+danger.import_dangerfile(github: "indigotech/danger", branch: "1.0.0")
+```
 
-## Usage
+## Usage Locally
 
-    Methods and attributes from this plugin are available in
-    your `Dangerfile` under the `taqtile` namespace.
+1. To test your PR locally, simply execute
+```
+$ bundle exec danger local
+```
 
-## Development
+## Usage on CI
 
-1. Clone this repo
-2. Run `bundle install` to setup dependencies.
-3. Run `bundle exec rake spec` to run the tests.
-4. Use `bundle exec guard` to automatically have tests run as you make changes.
-5. Make your changes.
+1. To execute on CI, add the following command preferably before building your code
+```
+$ bundle exec danger --dangerfile=path/to/Dangerfile
+```
