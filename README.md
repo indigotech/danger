@@ -9,13 +9,13 @@ On your project root folder:
 1. Create a `Gemfile` with
 ```ruby
 source "https://rubygems.org"
-gem "danger"
+gem "danger", "~>4.2"
 ```
 1. Execute `$ bundle  install`
 1. Create a `Dangerfile` with
 ```ruby
 @platform = "nodejs" # Possible platforms are "nodejs", "ios", "android" and "web"
-danger.import_dangerfile(github: "indigotech/danger", branch: "1.0.0")
+danger.import_dangerfile(github: "indigotech/danger", branch: "1.0.1") # replace version by latest on "Releases" section
 ```
 
 ## Usage Locally
