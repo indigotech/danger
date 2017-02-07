@@ -27,10 +27,16 @@ $ bundle exec danger local
 
 ## Usage on CI
 
-1. To execute on CI, add the following command preferably before building your code
+1. Add angithub access token as `DANGER_GITHUB_API_TOKEN` environment variable to enable `Danger` to access Github PR and add comments. 
+  - If you already have a token variable you can use something like the following:
+  ```bash
+  export DANGER_GITHUB_API_TOKEN=$YOUR_CURRENT_GITHUB_TOKEN_VARIABLE
+  ```
+1. To execute on CI, add the following command preferably before building your code and after the environment variable was defined.
 ```bash
 $ bundle exec danger --dangerfile=path/to/Dangerfile
 ```
+
 
 ## What is currently being checked
 
