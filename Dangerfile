@@ -48,139 +48,147 @@ git.modified_files.each do |file|
   end
 end
 
+
 ########################
-#    Node SECTION      #
+#   Node.JS SECTION    #
 ########################
+if @platform == "nodejs"
 
-git.modified_files.each do |file|
 
-  File.foreach(file) do |line|
-    # Warn developers that they are not supposed to use this flag
-    warn("`npm install` with flag `-g` was found in `#{file}` at `#{line}`. This is not recommended.") if line =~ /npm install -g/
+  git.modified_files.each do |file|
+
+    File.foreach(file) do |line|
+      # Warn developers that they are not supposed to use this flag
+      warn("`npm install` with flag `-g` was found in `#{file}` at `#{line}`. This is not recommended.") if line =~ /npm install -g/
+    end
+
+    # Look for files with spefic extension in modified files
+    ext = File.extname(file)
+    case ext
+    when ".env"
+      message("`#{file}` was modified")
+    end
+
+    # Keep node version
+    warn("`.nvmrc` was modified. Remember to update node version on `.travis.yml`, `package.json` and `README`!") if file == ".nvmrc"
+
   end
 
-  # Look for files with spefic extension in modified files
-  ext = File.extname(file)
-  case ext
-  when ".env"
-    message("`#{file}` was modified")
-  end
-
-  # Keep node version
-  warn("`.nvmrc` was modified. Remember to update node version on `.travis.yml`, `package.json` and `README`!") if file == ".nvmrc"
-
-end
-
-# Warn if 'console.log' was added
-diff = github.pr_diff
-warn("`console.log` added") if diff =~ /\+\s*console\.log/
-
-# Warn if 'package.json' was modified but 'yarn.lock' or 'shrinkwrap' was not
-yarn_exist = File.file?("yarn.lock")
-shrinkwrap_exist = File.file?("shrinkwrap")
-if git.modified_files.include?("package.json")
-  if yarn_exist && !git.modified_files.include?("yarn.lock")
-    warn("`package.json` was modified but `yarn.lock` was not")
-  end
-  if shrinkwrap_exist && !git.modified_files.include?("shrinkwrap")
-    warn("`package.json` was modified but `shrinkwrap` was not")
-  end
-  # Fail when dependency version is used with `~` or `^`
+  # Warn if 'console.log' was added
   diff = github.pr_diff
-  fail("Don't use `~` or `^` on dependencies version") if diff =~ /"[a-zA-Z0-9-]*":\s*"[~^]/
+  warn("`console.log` added") if diff =~ /\+\s*console\.log/
+
+  # Warn if 'package.json' was modified but 'yarn.lock' or 'shrinkwrap' was not
+  yarn_exist = File.file?("yarn.lock")
+  shrinkwrap_exist = File.file?("shrinkwrap")
+  if git.modified_files.include?("package.json")
+    if yarn_exist && !git.modified_files.include?("yarn.lock")
+      warn("`package.json` was modified but `yarn.lock` was not")
+    end
+    if shrinkwrap_exist && !git.modified_files.include?("shrinkwrap")
+      warn("`package.json` was modified but `shrinkwrap` was not")
+    end
+    # Fail when dependency version is used with `~` or `^`
+    diff = github.pr_diff
+    fail("Don't use `~` or `^` on dependencies version") if diff =~ /"[a-zA-Z0-9-]*":\s*"[~^]/
+  end
 end
+
 
 ########################
 #      iOS SECTION     #
 ########################
+if @platform == "ios"
 
-# Warn if 'Podfile' was modified but 'Podfile.lock' was not
-if git.modified_files.include?("Podfile")
-  if !git.modified_files.include?("Podfile.lock")
-    warn("`Podfile` was modified but `Podfile.lock` was not")
-  else
-    warn("`Podfile` was modified")
-  end
-end
-
-# Warn that some changes can 'break' provisionings and sign certificates configurations
-if git.modified_files.include?("Cakefile")
-  diff = github.pr_diff
-  warn("Lines modified on `Cakefile` can missconfigure project provisionings and sign certificates") if diff =~ /(PROVISIONING_PROFILE_SPECIFIER|BUNDLE_ID|DEVELOPMENT_TEAM|CODE_SIGN_IDENTITY)/
-end
-
-check_next_line = false
-plist_files_paths = []
-app = "Schutz" # Set your app name
-Find.find("#{app}/Supporting\ Files") do |path|
-  plist_files_paths << path if path =~ /.*Info\.plist$/
-end
-
-plist_files_paths.each do |file|
-  File.foreach(file) do |line|
-    # Warn that ATS Exception is set in plist
-    warn("ATS Exception found in plist `#{file}`") if line =~ /NSAppTransportSecurity/
-    # Warn that Landscape orientation is set in plist
-    message("Landscape orientation is set in plist `#{file}`") if line =~ /UIInterfaceOrientationLandscape/
-    # Warn Facebook ID hardcoded
-    if check_next_line
-      warn("Facebook App ID is hardcoded in plist `#{file}`") if line =~ /<string>\d*<\/string>/
-      check_next_line = false
-    end
-    check_next_line = true if line =~ /FacebookAppID/
-  end
-end
-
-File.foreach("Podfile") do |line|
-  # Warn pods being loaded from external git repos
-  message("`Podfile` has pods being loaded from external git repos at `#{line}`") if line =~ /:git/
-  # Warn when no version is specified
-  warn("No version specified for pod at `#{line}`") if line =~ /pod\s*'[a-zA-Z0-9-]*'(?!,)/
-end
-
-git.modified_files.each do |file|
-  File.foreach(file) do |line|
-    # Warn developers things that need to be done
-    warn("`TODO` was added in `#{file}` at line `#{line}`") if line =~ /^(#\s*.*?|\/\/\s*.*?)(TO\s*.*?DO)/mi
-
-    ext = File.extname(file)
-    case ext
-    when ".swift"
-      # Warn when forced unwrapping is used
-      warn("Possible forced unwrapping found in `#{file}` at `#{line}`") if line =~ /\w!\s*(.|\(|\{|\[|\]|\}|\))/m
-      # Warn print was added
-      warn("`print(\"\")` was added in `#{file}` at line `#{line}`") if line =~ /print\(""\)/
-      # Warn developers to use another alternatives
-      warn("`fatalError` was added in `#{file}` at line `#{line}` is not possible use error handlers or throw an exception?") if line =~ /fatalError\(/
+  # Warn if 'Podfile' was modified but 'Podfile.lock' was not
+  if git.modified_files.include?("Podfile")
+    if !git.modified_files.include?("Podfile.lock")
+      warn("`Podfile` was modified but `Podfile.lock` was not")
+    else
+      warn("`Podfile` was modified")
     end
   end
-end
 
+  # Warn that some changes can 'break' provisionings and sign certificates configurations
+  if git.modified_files.include?("Cakefile")
+    diff = github.pr_diff
+    warn("Lines modified on `Cakefile` can missconfigure project provisionings and sign certificates") if diff =~ /(PROVISIONING_PROFILE_SPECIFIER|BUNDLE_ID|DEVELOPMENT_TEAM|CODE_SIGN_IDENTITY)/
+  end
+
+  check_next_line = false
+  plist_files_paths = []
+  app = "Schutz" # Set your app name
+  Find.find("#{app}/Supporting\ Files") do |path|
+    plist_files_paths << path if path =~ /.*Info\.plist$/
+  end
+
+  plist_files_paths.each do |file|
+    File.foreach(file) do |line|
+      # Warn that ATS Exception is set in plist
+      warn("ATS Exception found in plist `#{file}`") if line =~ /NSAppTransportSecurity/
+      # Warn that Landscape orientation is set in plist
+      message("Landscape orientation is set in plist `#{file}`") if line =~ /UIInterfaceOrientationLandscape/
+      # Warn Facebook ID hardcoded
+      if check_next_line
+        warn("Facebook App ID is hardcoded in plist `#{file}`") if line =~ /<string>\d*<\/string>/
+        check_next_line = false
+      end
+      check_next_line = true if line =~ /FacebookAppID/
+    end
+  end
+
+  File.foreach("Podfile") do |line|
+    # Warn pods being loaded from external git repos
+    message("`Podfile` has pods being loaded from external git repos at `#{line}`") if line =~ /:git/
+    # Warn when no version is specified
+    warn("No version specified for pod at `#{line}`") if line =~ /pod\s*'[a-zA-Z0-9-]*'(?!,)/
+  end
+
+  git.modified_files.each do |file|
+    File.foreach(file) do |line|
+      # Warn developers things that need to be done
+      warn("`TODO` was added in `#{file}` at line `#{line}`") if line =~ /^(#\s*.*?|\/\/\s*.*?)(TO\s*.*?DO)/mi
+
+      ext = File.extname(file)
+      case ext
+      when ".swift"
+        # Warn when forced unwrapping is used
+        warn("Possible forced unwrapping found in `#{file}` at `#{line}`") if line =~ /\w!\s*(.|\(|\{|\[|\]|\}|\))/m
+        # Warn print was added
+        warn("`print(\"\")` was added in `#{file}` at line `#{line}`") if line =~ /print\(""\)/
+        # Warn developers to use another alternatives
+        warn("`fatalError` was added in `#{file}` at line `#{line}` is not possible use error handlers or throw an exception?") if line =~ /fatalError\(/
+      end
+    end
+  end
+end
 
 ########################
 #    Android SECTION   #
 ########################
-
-git.modified_files.each do |file|
-  ext = File.extname(file)
-  case ext
-  # Warn when a file .gradle is modified
-  when ".gradle"
-    message("`#{file}` was modified")
+if @platform == "android"
+  git.modified_files.each do |file|
+    ext = File.extname(file)
+    case ext
+    # Warn when a file .gradle is modified
+    when ".gradle"
+      message("`#{file}` was modified")
+    end
+    # Warn when a FileManifest.xml is modified
+    message("`#{file}` was modified") if file =~ /Manifest\.xml/
   end
-  # Warn when a FileManifest.xml is modified
-  message("`#{file}` was modified") if file =~ /Manifest\.xml/
 end
 
 ########################
 #      Web SECTION     #
 ########################
-
-git.modified_files.each do |file|
-  ext = File.extname(file)
-  case ext
-  # Warn when a file .style is modified
-  when ".styl"
-    message("`#{file}` was modified")
+if @platform == "web"
+  git.modified_files.each do |file|
+    ext = File.extname(file)
+    case ext
+    # Warn when a file .style is modified
+    when ".styl"
+      message("`#{file}` was modified")
+    end
   end
 end
