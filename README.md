@@ -32,6 +32,50 @@ $ bundle exec danger local
 $ bundle exec danger --dangerfile=path/to/Dangerfile
 ```
 
+## What is currently being checked
+
+### Common
+
+- [x] Warn if some files/folders to be changed/committed like `.gitignore`, `Gemfile`, `Gemfile.lock`, `.travis.yml`
+- [x] `>>>` Strings to make sure rebase was successful
+- [x] Big PRs
+- [x] Warn when `Gemfile` was modified and `Gemfile.lock` was not
+- [x] Fail when no description is provided
+
+### Node
+
+- [x] Warn if some files/folders to be changed/committed like `yarn.lock`, `docker-compose.yml`, `Procfile`, `npm-shrinkwrap.json`, `node_modules`, `env.coffee`
+- [x] Warn when Amazon Secret Key is hardcoded
+- [x] Warn when `npm install -g` is used
+- [x] Warn when `.env` or `.nvmrc` files are modified
+- [x] Warn when `console.log` is added 
+- [x] Warn when `package.json` was modified and `yarn.lock` or `shrinkwrap` was not
+- [x] Warn if node version is different between .travis.yml, .nvmrc, package.json and README (or just warn if node version has change just in one of these locations)
+- [x] At packages.json every package should have its version fixed (do not use ^ or ~), or explicitly set the major and minor versions (ie.: 1.2.x)
+
+### iOS
+
+- [x] Warn if some files/folders to be changed/committed like `Cakefile`, `settings.yml.erb`, `Fastfile`
+- [x] Warn when `Podfile` was modified and `Podfile.lock` was not
+- [x] Warn if changes made in Cakefile may 'break' provisionings and sign certificates configurations
+- [x] Warn when ATS Exception is set in plist
+- [x] Warn when Landscape orientation is set in plist
+- [x] Warn when Facebook ID is hardcoded in plist
+- [x] Warn when pod is being loaded from external git repos
+- [x] Warn when `TODO` is added
+- [x] Warn when `print(“”)` is added
+- [x] Warn when `fatalError` is added
+- [x] Warn if Podfile has pods should not using fixed versions
+- [x] Warn if forced unwrapping was found
+
+### Android
+
+- [x] Warn when `.gradle` or `Manifest.xml` files are modified
+
+### Web
+
+- [x] Warn if CSS files were changed
+
 ## Troubleshooting
 
 ### It is asking me for a `DANGER_GITHUB_API_TOKEN`
