@@ -58,6 +58,7 @@ $ bundle exec danger --dangerfile=path/to/Dangerfile
 - [x] Warn when `package.json` was modified and `yarn.lock` or `shrinkwrap` was not
 - [x] Warn if node version is different between .travis.yml, .nvmrc, package.json and README (or just warn if node version has change just in one of these locations)
 - [x] At packages.json every package should have its version fixed (do not use ^ or ~), or explicitly set the major and minor versions (ie.: 1.2.x)
+- [x] [TypeScript] Warn if using `<any>` as return type.
 
 ### iOS
 
@@ -72,7 +73,7 @@ $ bundle exec danger --dangerfile=path/to/Dangerfile
 - [x] Warn when `print(“”)` is added
 - [x] Warn when `fatalError` is added
 - [x] Warn if Podfile has pods should not using fixed versions
-- [x] Warn if forced unwrapping was found
+- [x] [Swift] Warn if forced unwrapping was found
 
 ### Android
 
