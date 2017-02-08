@@ -84,6 +84,18 @@ if @platform == "nodejs"
     case ext
     when ".env"
       message("`#{file}` was modified")
+    when ".ts"
+      begin
+        File.foreach(file) do |line|
+          line = line.gsub('\n','').strip
+          # Warn when a TypeScript file has a new function returning <any> instead of strongly typed.
+          # There are several situation that need to return just 'any', so to avoid having too many false positives 
+          #   we are checking just <any> for now
+          warn("Possibly returning <any> in a function, prefer having a strongly typed return. `#{file}` at line `#{line}`.") if line =~ /<any>/im
+        end
+      rescue
+        message "Could not read file #{file}, does it really exist?"
+      end
     end
 
     # Keep node version
