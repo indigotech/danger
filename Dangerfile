@@ -57,6 +57,8 @@ modified_files.each do |file|
       fail("Commited file without resolving merges/rebases conflict issues on `#{file}` - `#{line}`") if line =~ /^>>>>>>>/
       # Look for Amazon Secret keys in modified files
       warn("Possible amazon secret key hardcoded found in `#{file}`") if line =~ /(?<![A-Za-z0-9\/+=])[A-Za-z0-9\/+=]{40}(?![A-Za-z0-9\/+=])/
+      # Ensure we keep using secure https:// references instead of http://
+      fail("Lets keep the web secure. Detected unsecure `http://` use in `#{file}` - `#{line}`") if line =~ /http:\/\//
     end
     rescue
       message "Could not read file #{file}, does it really exist?"
