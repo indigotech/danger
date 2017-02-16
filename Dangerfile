@@ -71,7 +71,18 @@ def checkForNodeVersion(file, line)
   # Keep node version synced between declarations
   warn("`package.json` node version was modified. Remember to update node version on `.travis.yml`, `.nvmrc` and `README`!") if file && line && file == "package.json" && line =~ /"node":/
   warn("`.nvmrc` was modified. Remember to update node version on `.travis.yml`, `package.json` and `README`!") if file && file == ".nvmrc"
+end
 
+def checkForWeaklyTypedFunctionReturn(line)
+  # Warn when a TypeScript file has a new function returning <any> instead of strongly typed.
+  # There are several situation that need to return just 'any', so to avoid having too many false positives 
+  #   we are checking just <any> for now
+  warn("Possibly returning <any> in a function, prefer having a strongly typed return. `#{file}` at line `#{line}`.") if line =~ /<any>/im
+end
+
+def checkForNpmInstallGlobal(line)
+  # Warn developers that they are not supposed to use this flag
+  warn("`npm install` with flag `-g` was found in `#{file}` at `#{line}`. This is not recommended.") if line =~ /npm install -g/
 end
 
 ########################
@@ -83,10 +94,9 @@ if @platform == "nodejs"
     begin
       File.foreach(file) do |line|
         line = line.gsub('\n','').strip
-        # Warn developers that they are not supposed to use this flag
-        warn("`npm install` with flag `-g` was found in `#{file}` at `#{line}`. This is not recommended.") if line =~ /npm install -g/
-
+        
         checkForNodeVersion(file, line)
+        checkForNpmInstallGlobal(line)
       end
     rescue
       message "Could not read file #{file}, does it really exist?"
@@ -101,10 +111,8 @@ if @platform == "nodejs"
       begin
         File.foreach(file) do |line|
           line = line.gsub('\n','').strip
-          # Warn when a TypeScript file has a new function returning <any> instead of strongly typed.
-          # There are several situation that need to return just 'any', so to avoid having too many false positives 
-          #   we are checking just <any> for now
-          warn("Possibly returning <any> in a function, prefer having a strongly typed return. `#{file}` at line `#{line}`.") if line =~ /<any>/im
+
+          checkForWeaklyTypedFunctionReturn(line)
         end
       rescue
         message "Could not read file #{file}, does it really exist?"
@@ -244,13 +252,26 @@ end
 if @platform == "web"
   modified_files.each do |file|
     File.foreach(file) do |line|
+      line = line.gsub('\n','').strip
+      
       checkForNodeVersion(file, line)
+      checkForNpmInstallGlobal(line)
     end
     ext = File.extname(file)
     case ext
     # Warn when a file .style is modified
     when ".styl"
       message("`#{file}` was modified")
+    when ".ts"
+      begin
+        File.foreach(file) do |line|
+          line = line.gsub('\n','').strip
+
+          checkForWeaklyTypedFunctionReturn(line)
+        end
+      rescue
+        message "Could not read file #{file}, does it really exist?"
+      end
     end
   end
 end
