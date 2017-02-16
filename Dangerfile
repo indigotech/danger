@@ -64,6 +64,17 @@ modified_files.each do |file|
 end
 
 ########################
+#   FUNCTIONS SECTION  #
+########################
+
+def checkForNodeVersion(file, line)
+  # Keep node version synced between declarations
+  warn("`package.json` node version was modified. Remember to update node version on `.travis.yml`, `.nvmrc` and `README`!") if file && line && file == "package.json" && line =~ /"node":/
+  warn("`.nvmrc` was modified. Remember to update node version on `.travis.yml`, `package.json` and `README`!") if file && file == ".nvmrc"
+
+end
+
+########################
 #   Node.JS SECTION    #
 ########################
 if @platform == "nodejs"
@@ -74,6 +85,8 @@ if @platform == "nodejs"
         line = line.gsub('\n','').strip
         # Warn developers that they are not supposed to use this flag
         warn("`npm install` with flag `-g` was found in `#{file}` at `#{line}`. This is not recommended.") if line =~ /npm install -g/
+
+        checkForNodeVersion(file, line)
       end
     rescue
       message "Could not read file #{file}, does it really exist?"
@@ -97,9 +110,6 @@ if @platform == "nodejs"
         message "Could not read file #{file}, does it really exist?"
       end
     end
-
-    # Keep node version
-    warn("`.nvmrc` was modified. Remember to update node version on `.travis.yml`, `package.json` and `README`!") if file == ".nvmrc"
 
   end
 
@@ -233,6 +243,9 @@ end
 ########################
 if @platform == "web"
   modified_files.each do |file|
+    File.foreach(file) do |line|
+      checkForNodeVersion(file, line)
+    end
     ext = File.extname(file)
     case ext
     # Warn when a file .style is modified
