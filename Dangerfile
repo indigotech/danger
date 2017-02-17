@@ -93,6 +93,25 @@ def checkForNpmInstallGlobal(file, line)
   warn("`npm install` with flag `-g` was found in `#{file}` at `#{line}`. This is not recommended.") if line =~ /npm install -g/
 end
 
+def validatePackageJson(modified_files, diff)
+  # Warn if 'package.json' was modified but 'yarn.lock' or 'shrinkwrap' was not
+  yarn_exist = File.file?("yarn.lock")
+  shrinkwrap_exist = File.file?("shrinkwrap")
+  if modified_files.include?("package.json")
+    if yarn_exist && !modified_files.include?("yarn.lock")
+      warn("`package.json` was modified but `yarn.lock` was not")
+    end
+    if shrinkwrap_exist && !modified_files.include?("shrinkwrap")
+      warn("`package.json` was modified but `shrinkwrap` was not")
+    end
+    
+    # Fail when dependency version is used with `~` or `^`
+    fail("Don't use `~` or `^` on dependencies version") if diff =~ /"[a-zA-Z0-9-]*":\s*"[~^]/
+  end
+end
+
+
+
 ########################
 #   Node.JS SECTION    #
 ########################
@@ -133,20 +152,7 @@ if @platform == "nodejs"
   diff = github.pr_diff
   warn("`console.log` added") if diff =~ /\+\s*console\.log/
 
-  # Warn if 'package.json' was modified but 'yarn.lock' or 'shrinkwrap' was not
-  yarn_exist = File.file?("yarn.lock")
-  shrinkwrap_exist = File.file?("shrinkwrap")
-  if modified_files.include?("package.json")
-    if yarn_exist && !modified_files.include?("yarn.lock")
-      warn("`package.json` was modified but `yarn.lock` was not")
-    end
-    if shrinkwrap_exist && !modified_files.include?("shrinkwrap")
-      warn("`package.json` was modified but `shrinkwrap` was not")
-    end
-    # Fail when dependency version is used with `~` or `^`
-    diff = github.pr_diff
-    fail("Don't use `~` or `^` on dependencies version") if diff =~ /"[a-zA-Z0-9-]*":\s*"[~^]/
-  end
+  validatePackageJson(modified_files, diff)
 end
 
 
@@ -287,4 +293,6 @@ if @platform == "web"
       end
     end
   end
+
+  validatePackageJson(modified_files, github.pr_diff)
 end
