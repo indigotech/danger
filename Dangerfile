@@ -43,6 +43,11 @@ files_to_check += ["Cakefile", "fastlane/settings.yml.erb", "fastlane/Fastfile",
   message("`#{file}` modified")
 end
 
+diff = github.pr_diff
+# Ensure we keep using secure https:// references instead of http://
+fail("Detected unsecure `http://` use in `#{file}` - `#{line}`") if diff =~ /\+\s*http:\/\/.*/
+
+
 # Warn if 'Gemfile' was modified and 'Gemfile.lock' was not
 if modified_files.include?("Gemfile")
   if !modified_files.include?("Gemfile.lock")
@@ -59,9 +64,7 @@ modified_files.each do |file|
       # Make sure resolves merges or rebases conflict issues
       fail("Commited file without resolving merges/rebases conflict issues on `#{file}` - `#{line}`") if line =~ /^>>>>>>>/
       # Look for Amazon Secret keys in modified files
-      warn("Possible amazon secret key hardcoded found in `#{file}`") if line =~ /(?<![A-Za-z0-9\/+=])[A-Za-z0-9\/+=]{40}(?![A-Za-z0-9\/+=])/
-      # Ensure we keep using secure https:// references instead of http://
-      fail("Lets keep the web secure. Detected unsecure `http://` use in `#{file}` - `#{line}`") if line =~ /http:\/\//
+      warn("Possible amazon secret key hardcoded found in `#{file}`") if line =~ /(?<![A-Za-z0-9\/+=])[A-Za-z0-9\/+=]{40}(?![A-Za-z0-9\/+=])/ && file != "yarn.lock"
     end
     rescue
       message "Could not read file #{file}, does it really exist?"
