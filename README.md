@@ -28,15 +28,19 @@ danger.import_dangerfile(path: "/absolute/path/to/your/Dangerfile-folder")
 
 ### Execution
 
-To test your PR locally, simply execute
+There are currently [two ways](http://danger.systems/guides/troubleshooting.html#i-want-to-work-locally-on-my-dangerfile) of working with your dangerfile locally
+
+1. Run danger locally against a PR on github
 ```bash
 $ bundle exec danger pr <link to github PR>
 ```
 
-Conversely, to test the last local merge, simply execute
+2. Run danger locally against the last merged PR on the current branch. Please note that Danger detects the last merged **PR**, and not the last merge. So you'll need to have a PR setup on github anyways.
 ```bash
 $ bundle exec danger local
 ```
+
+
 
 ## Usage on CI
 
