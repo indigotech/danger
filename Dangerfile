@@ -10,8 +10,11 @@ end
 #    COMMON SECTION    #
 ########################
 
-# moved files have a pattern thatwere  messing with file reading
+# moved files have a pattern that were  messing with file reading
 modified_files = git.modified_files.select { |path| !path.include? "=>" }
+
+# Comparing only readable files
+modified_files = modified_files.reject { |f|  /.*\.(tgz|png|jpg)/.match(File.extname(f)) }
 
 # Sometimes it's a README fix, or something like that - which isn't relevant for
 # including in a project's CHANGELOG for example
@@ -82,7 +85,7 @@ def checkForWeaklyTypedFunctionReturn(line)
   warn("Possibly returning <any> in a function, prefer having a strongly typed return. `#{file}` at line `#{line}`.") if line =~ /<any>/im
 end
 
-def checkForNpmInstallGlobal(line)
+def checkForNpmInstallGlobal(file, line)
   # Warn developers that they are not supposed to use this flag
   warn("`npm install` with flag `-g` was found in `#{file}` at `#{line}`. This is not recommended.") if line =~ /npm install -g/
 end
@@ -98,7 +101,7 @@ if @platform == "nodejs"
         line = line.gsub('\n','').strip
         
         checkForNodeVersion(file, line)
-        checkForNpmInstallGlobal(line)
+        checkForNpmInstallGlobal(file, line)
       end
     rescue
       message "Could not read file #{file}, does it really exist?"
@@ -253,12 +256,17 @@ end
 ########################
 if @platform == "web"
   modified_files.each do |file|
-    File.foreach(file) do |line|
-      line = line.gsub('\n','').strip
-      
-      checkForNodeVersion(file, line)
-      checkForNpmInstallGlobal(line)
+    begin
+      File.foreach(file) do |line|
+        line = line.gsub('\n','').strip
+        
+        checkForNodeVersion(file, line)
+        checkForNpmInstallGlobal(file, line)
+      end
+    rescue
+      message "Could not read file #{file}, does it really exist?"
     end
+
     ext = File.extname(file)
     case ext
     # Warn when a file .style is modified
