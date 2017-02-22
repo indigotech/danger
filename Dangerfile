@@ -14,7 +14,7 @@ end
 modified_files = git.modified_files.select { |path| !path.include? "=>" }
 
 # Comparing only readable files
-modified_files = modified_files.reject { |f|  /.*\.(tgz|png|jpg)/.match(File.extname(f)) }
+modified_files = modified_files.reject { |f|  /.*\.(tgz|png|jpg|gem)/.match(File.extname(f)) }
 
 # Sometimes it's a README fix, or something like that - which isn't relevant for
 # including in a project's CHANGELOG for example
@@ -35,7 +35,7 @@ end
 # Common files
 files_to_check = ["Gemfile.lock", ".travis.yml", ".gitignore"]
 # Node files
-files_to_check += ["yarn.lock", "docker-compose.yml", "Procfile", "npm-shrinkwrap.json", "node_modules", "tasks/options/env.coffee"]
+files_to_check += ["yarn.lock", "docker-compose.yml", "Procfile", "npm-shrinkwrap.json", "node_modules", "tasks/options/env.coffee", "tslint.json"]
 # iOS files
 files_to_check += ["Cakefile", "fastlane/settings.yml.erb", "fastlane/Fastfile", "Podfile.lock"]
 # Check if files were modified
@@ -64,7 +64,7 @@ modified_files.each do |file|
       # Make sure resolves merges or rebases conflict issues
       fail("Commited file without resolving merges/rebases conflict issues on `#{file}` - `#{line}`") if line =~ /^>>>>>>>/
       # Look for Amazon Secret keys in modified files
-      warn("Possible amazon secret key hardcoded found in `#{file}`") if line =~ /(?<![A-Za-z0-9\/+=])[A-Za-z0-9\/+=]{40}(?![A-Za-z0-9\/+=])/ && file != "yarn.lock"
+      warn("Possible amazon secret key hardcoded found in `#{file}` - `#{line}`") if line =~ /(?<![A-Za-z0-9\/+=])[A-Za-z0-9\/+=]{40}(?![A-Za-z0-9\/+=])/ && file != "yarn.lock" && file != "Podfile.lock"
     end
     rescue
       message "Could not read file #{file}, does it really exist?"
