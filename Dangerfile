@@ -14,7 +14,7 @@ end
 modified_files = git.modified_files.select { |path| !path.include? "=>" }
 
 # Comparing only readable files
-modified_files = modified_files.reject { |f|  /.*\.(tgz|png|jpg|gem)/.match(File.extname(f)) }
+modified_files = modified_files.reject { |f|  /.*\.(tgz|png|jpg|gema)/.match(File.extname(f)) }
 
 # Sometimes it's a README fix, or something like that - which isn't relevant for
 # including in a project's CHANGELOG for example
@@ -45,7 +45,7 @@ end
 
 diff = github.pr_diff
 # Ensure we keep using secure https:// references instead of http://
-fail("Detected unsecure `http://` use in `#{file}` - `#{line}`") if diff =~ /\+\s*http:\/\/.*/
+warn("Detected unsecure `http://` use in `#{file}` - `#{line}`") if diff =~ /\+\s*http:\/\/.*/
 
 
 # Warn if 'Gemfile' was modified and 'Gemfile.lock' was not
@@ -90,7 +90,7 @@ end
 
 def checkForNpmInstallGlobal(file, line)
   # Warn developers that they are not supposed to use this flag
-  warn("`npm install` with flag `-g` was found in `#{file}` at `#{line}`. This is not recommended.") if line =~ /npm install -g/
+  fail("`npm install` with flag `-g` was found in `#{file}` at `#{line}`. This is not recommended.") if line =~ /npm install -g/
 end
 
 def validatePackageJson(modified_files, diff)
