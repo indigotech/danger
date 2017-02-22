@@ -85,7 +85,7 @@ def checkForWeaklyTypedFunctionReturn(line)
   # Warn when a TypeScript file has a new function returning <any> instead of strongly typed.
   # There are several situation that need to return just 'any', so to avoid having too many false positives 
   #   we are checking just <any> for now
-  warn("Possibly returning <any> in a function, prefer having a strongly typed return. `#{file}` at line `#{line}`.") if line =~ /<any>/im
+  warn("Possibly returning 'any' in a function, prefer having a strongly typed return. `#{file}` at line `#{line}`.") if line =~ /<any>/im
 end
 
 def checkForNpmInstallGlobal(file, line)
