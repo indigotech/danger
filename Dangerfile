@@ -10,8 +10,11 @@ end
 #    COMMON SECTION    #
 ########################
 
-# moved files have a pattern thatwere  messing with file reading
+# moved files have a pattern that were  messing with file reading
 modified_files = git.modified_files.select { |path| !path.include? "=>" }
+
+# Comparing only readable files
+modified_files = modified_files.reject { |f|  /.*\.(tgz|png|jpg|gema)/.match(File.extname(f)) }
 
 # Sometimes it's a README fix, or something like that - which isn't relevant for
 # including in a project's CHANGELOG for example
@@ -32,13 +35,18 @@ end
 # Common files
 files_to_check = ["Gemfile.lock", ".travis.yml", ".gitignore"]
 # Node files
-files_to_check += ["yarn.lock", "docker-compose.yml", "Procfile", "npm-shrinkwrap.json", "node_modules", "tasks/options/env.coffee"]
+files_to_check += ["yarn.lock", "docker-compose.yml", "Procfile", "npm-shrinkwrap.json", "node_modules", "tasks/options/env.coffee", "tslint.json"]
 # iOS files
 files_to_check += ["Cakefile", "fastlane/settings.yml.erb", "fastlane/Fastfile", "Podfile.lock"]
 # Check if files were modified
 (modified_files & files_to_check).each do |file|
   message("`#{file}` modified")
 end
+
+diff = github.pr_diff
+# Ensure we keep using secure https:// references instead of http://
+warn("Detected unsecure `http://` use in `#{file}` - `#{line}`") if diff =~ /\+\s*http:\/\/.*/
+
 
 # Warn if 'Gemfile' was modified and 'Gemfile.lock' was not
 if modified_files.include?("Gemfile")
@@ -56,12 +64,53 @@ modified_files.each do |file|
       # Make sure resolves merges or rebases conflict issues
       fail("Commited file without resolving merges/rebases conflict issues on `#{file}` - `#{line}`") if line =~ /^>>>>>>>/
       # Look for Amazon Secret keys in modified files
-      warn("Possible amazon secret key hardcoded found in `#{file}`") if line =~ /(?<![A-Za-z0-9\/+=])[A-Za-z0-9\/+=]{40}(?![A-Za-z0-9\/+=])/
+      warn("Possible amazon secret key hardcoded found in `#{file}` - `#{line}`") if line =~ /(?<![A-Za-z0-9\/+=])[A-Za-z0-9\/+=]{40}(?![A-Za-z0-9\/+=])/ && file != "yarn.lock" && file != "Podfile.lock"
     end
     rescue
       message "Could not read file #{file}, does it really exist?"
     end
 end
+
+########################
+#   FUNCTIONS SECTION  #
+########################
+
+def checkForNodeVersion(file, line)
+  # Keep node version synced between declarations
+  warn("`package.json` node version was modified. Remember to update node version on `.travis.yml`, `.nvmrc` and `README`!") if file && line && file == "package.json" && line =~ /"node":/
+  warn("`.nvmrc` was modified. Remember to update node version on `.travis.yml`, `package.json` and `README`!") if file && file == ".nvmrc"
+end
+
+def checkForWeaklyTypedFunctionReturn(line)
+  # Warn when a TypeScript file has a new function returning <any> instead of strongly typed.
+  # There are several situation that need to return just 'any', so to avoid having too many false positives 
+  #   we are checking just <any> for now
+  warn("Possibly returning 'any' in a function, prefer having a strongly typed return. `#{file}` at line `#{line}`.") if line =~ /<any>/im
+end
+
+def checkForNpmInstallGlobal(file, line)
+  # Warn developers that they are not supposed to use this flag
+  fail("`npm install` with flag `-g` was found in `#{file}` at `#{line}`. This is not recommended.") if line =~ /npm install -g/
+end
+
+def validatePackageJson(modified_files, diff)
+  # Warn if 'package.json' was modified but 'yarn.lock' or 'shrinkwrap' was not
+  yarn_exist = File.file?("yarn.lock")
+  shrinkwrap_exist = File.file?("shrinkwrap")
+  if modified_files.include?("package.json")
+    if yarn_exist && !modified_files.include?("yarn.lock")
+      warn("`package.json` was modified but `yarn.lock` was not")
+    end
+    if shrinkwrap_exist && !modified_files.include?("shrinkwrap")
+      warn("`package.json` was modified but `shrinkwrap` was not")
+    end
+    
+    # Fail when dependency version is used with `~` or `^`
+    fail("Don't use `~` or `^` on dependencies version") if diff =~ /"[a-zA-Z0-9-]*":\s*"[~^]/
+  end
+end
+
+
 
 ########################
 #   Node.JS SECTION    #
@@ -72,8 +121,9 @@ if @platform == "nodejs"
     begin
       File.foreach(file) do |line|
         line = line.gsub('\n','').strip
-        # Warn developers that they are not supposed to use this flag
-        warn("`npm install` with flag `-g` was found in `#{file}` at `#{line}`. This is not recommended.") if line =~ /npm install -g/
+        
+        checkForNodeVersion(file, line)
+        checkForNpmInstallGlobal(file, line)
       end
     rescue
       message "Could not read file #{file}, does it really exist?"
@@ -88,18 +138,13 @@ if @platform == "nodejs"
       begin
         File.foreach(file) do |line|
           line = line.gsub('\n','').strip
-          # Warn when a TypeScript file has a new function returning <any> instead of strongly typed.
-          # There are several situation that need to return just 'any', so to avoid having too many false positives 
-          #   we are checking just <any> for now
-          warn("Possibly returning <any> in a function, prefer having a strongly typed return. `#{file}` at line `#{line}`.") if line =~ /<any>/im
+
+          checkForWeaklyTypedFunctionReturn(line)
         end
       rescue
         message "Could not read file #{file}, does it really exist?"
       end
     end
-
-    # Keep node version
-    warn("`.nvmrc` was modified. Remember to update node version on `.travis.yml`, `package.json` and `README`!") if file == ".nvmrc"
 
   end
 
@@ -107,20 +152,7 @@ if @platform == "nodejs"
   diff = github.pr_diff
   warn("`console.log` added") if diff =~ /\+\s*console\.log/
 
-  # Warn if 'package.json' was modified but 'yarn.lock' or 'shrinkwrap' was not
-  yarn_exist = File.file?("yarn.lock")
-  shrinkwrap_exist = File.file?("shrinkwrap")
-  if modified_files.include?("package.json")
-    if yarn_exist && !modified_files.include?("yarn.lock")
-      warn("`package.json` was modified but `yarn.lock` was not")
-    end
-    if shrinkwrap_exist && !modified_files.include?("shrinkwrap")
-      warn("`package.json` was modified but `shrinkwrap` was not")
-    end
-    # Fail when dependency version is used with `~` or `^`
-    diff = github.pr_diff
-    fail("Don't use `~` or `^` on dependencies version") if diff =~ /"[a-zA-Z0-9-]*":\s*"[~^]/
-  end
+  validatePackageJson(modified_files, diff)
 end
 
 
@@ -233,11 +265,34 @@ end
 ########################
 if @platform == "web"
   modified_files.each do |file|
+    begin
+      File.foreach(file) do |line|
+        line = line.gsub('\n','').strip
+        
+        checkForNodeVersion(file, line)
+        checkForNpmInstallGlobal(file, line)
+      end
+    rescue
+      message "Could not read file #{file}, does it really exist?"
+    end
+
     ext = File.extname(file)
     case ext
     # Warn when a file .style is modified
     when ".styl"
       message("`#{file}` was modified")
+    when ".ts"
+      begin
+        File.foreach(file) do |line|
+          line = line.gsub('\n','').strip
+
+          checkForWeaklyTypedFunctionReturn(line)
+        end
+      rescue
+        message "Could not read file #{file}, does it really exist?"
+      end
     end
   end
+
+  validatePackageJson(modified_files, github.pr_diff)
 end
