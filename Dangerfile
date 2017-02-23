@@ -45,7 +45,7 @@ end
 
 diff = github.pr_diff
 # Ensure we keep using secure https:// references instead of http://
-warn("Detected unsecure `http://` use in `#{file}` - `#{line}`") if diff =~ /\+\s*http:\/\/.*/
+warn("Detected unsecure `http://` use in `#{file}` - `#{line}`") if diff =~ /\+.*http:\/\/.*/
 
 
 # Warn if 'Gemfile' was modified and 'Gemfile.lock' was not
