@@ -5,6 +5,11 @@ if !defined? @platform
   @platform = "" # avoid future crashes
 end
 
+if [@minimum_tokens, @language, @directory, @ssh, @target_branch].any? { |e| e.nil? }
+  warn("Variables for checking duplicated code not defined, skipping this validation.")
+  @check_cdp = false
+end
+
 ########################
 #   FUNCTIONS SECTION  #
 ########################
@@ -72,6 +77,11 @@ def exceptionMessages(file)
   else
     message "One of modified files could not be read, does it really exist?"
   end
+end
+
+# Check if duplicated code increased
+if @check_cdp
+  warn("This PR has more duplicated code than your target branch, therefore it could have some code quality issues") if has_more_duplicated_code?
 end
 
 ########################
@@ -155,6 +165,22 @@ def validateSpecificExtensions(file)
       exceptionMessages(file)
     end
   end
+end
+
+# Functions to check code duplication
+def has_more_duplicated_code?
+    current_branch_cpd_results = run_cpd_on_current_branch
+    target_branch_cpd_results = run_cpd_on_target_branch
+    current_branch_cpd_results > target_branch_cpd_results
+end
+
+def run_cpd_on_current_branch
+  `pmd cpd --language #{@language} --minimum-tokens #{@minimum_tokens} --files #{@directory} --ignore-identifiers | grep tokens | wc -l`.to_i
+end
+
+def run_cpd_on_target_branch
+  `git clone --depth 1 #{@ssh} --branch #{@target_branch} target-branch`
+  `pmd cpd --language #{@language} --minimum-tokens  #{@minimum_tokens} --files target-branch/#{@directory} --ignore-identifiers | grep tokens | wc -l`.to_i
 end
 
 ########################
