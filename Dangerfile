@@ -14,7 +14,7 @@ end
 modified_files = git.modified_files.select { |path| !path.include? "=>" }
 
 # Comparing only readable files
-modified_files = modified_files.reject { |f|  /.*\.(tgz|png|jpg|gema)/.match(File.extname(f)) }
+modified_files = modified_files.reject { |f|  /.*\.(tgz|png|jpg|gem)/.match(File.extname(f)) }
 
 # Sometimes it's a README fix, or something like that - which isn't relevant for
 # including in a project's CHANGELOG for example
