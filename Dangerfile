@@ -43,10 +43,6 @@ files_to_check += ["Cakefile", "fastlane/settings.yml.erb", "fastlane/Fastfile",
   message("`#{file}` modified")
 end
 
-diff = github.pr_diff
-# Ensure we keep using secure https:// references instead of http://
-warn("Detected unsecure `http://` use in `#{file}` - `#{line}`") if diff =~ /\+.*http:\/\/.*/
-
 
 # Warn if 'Gemfile' was modified and 'Gemfile.lock' was not
 if modified_files.include?("Gemfile")
@@ -59,6 +55,13 @@ end
 
 modified_files.each do |file|
   begin
+    fileDiff = git.diff_for_file(file)
+    # Ensure we keep using secure https:// references instead of http://
+    httpMatches = fileDiff.patch.scan(/\+.*http:\/\/.*/)
+    httpMatches.each do |httpMatch| 
+      warn("Detected unsecure `http://` use in `#{file}` section `#{httpMatch}`") if httpMatch
+    end
+
     File.foreach(file) do |line|
       line = line.gsub('\n','').strip
       # Make sure resolves merges or rebases conflict issues
