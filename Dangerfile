@@ -57,7 +57,10 @@ modified_files.each do |file|
   begin
     fileDiff = git.diff_for_file(file)
     # Ensure we keep using secure https:// references instead of http://
-    warn("Detected unsecure `http://` use in `#{file}`") if fileDiff.patch =~ /\+.*http:\/\/.*/
+    httpMatches = fileDiff.patch.scan(/\+.*http:\/\/.*/)
+    httpMatches.each do |httpMatch| 
+      warn("Detected unsecure `http://` use in `#{file}` section `#{httpMatch}`") if httpMatch
+    end
 
     File.foreach(file) do |line|
       line = line.gsub('\n','').strip
