@@ -8,6 +8,8 @@ end
 if [@minimum_tokens, @language, @directory, @ssh, @target_branch].any? { |e| e.nil? }
   warn("Variables for checking duplicated code not defined, skipping this validation.")
   @check_cdp = false
+else
+  @check_cdp = true
 end
 
 ########################
@@ -77,11 +79,6 @@ def exceptionMessages(file)
   else
     message "One of modified files could not be read, does it really exist?"
   end
-end
-
-# Check if duplicated code increased
-if @check_cdp
-  warn("This PR has more duplicated code than your target branch, therefore it could have some code quality issues") if has_more_duplicated_code?
 end
 
 ########################
@@ -453,4 +450,9 @@ modified_files.each do |file|
   rescue
     exceptionMessages(file)
   end
+end
+
+# Check if duplicated code increased
+if @check_cdp
+  warn("This PR has more duplicated code than your target branch, therefore it could have some code quality issues") if has_more_duplicated_code?
 end
