@@ -16,6 +16,9 @@ modified_files = git.modified_files.select { |path| !path.include? "=>" }
 # Comparing only readable files
 modified_files = modified_files.reject { |f|  /.*\.(tgz|png|jpg|gem)/.match(File.extname(f)) }
 
+# Removing deleted files from modified files array
+modified_files = modified_files.reject { |f| git.deleted_files.include?(f) }
+
 # Sometimes it's a README fix, or something like that - which isn't relevant for
 # including in a project's CHANGELOG for example
 declared_trivial = github.pr_title.include? "#trivial"
@@ -58,7 +61,7 @@ modified_files.each do |file|
     fileDiff = git.diff_for_file(file)
     # Ensure we keep using secure https:// references instead of http://
     httpMatches = fileDiff.patch.scan(/\+.*http:\/\/.*/)
-    httpMatches.each do |httpMatch| 
+    httpMatches.each do |httpMatch|
       warn("Detected unsecure `http://` use in `#{file}` section `#{httpMatch}`") if httpMatch
     end
 
@@ -86,7 +89,7 @@ end
 
 def checkForWeaklyTypedFunctionReturn(line)
   # Warn when a TypeScript file has a new function returning <any> instead of strongly typed.
-  # There are several situation that need to return just 'any', so to avoid having too many false positives 
+  # There are several situation that need to return just 'any', so to avoid having too many false positives
   #   we are checking just <any> for now
   warn("Possibly returning 'any' in a function, prefer having a strongly typed return. `#{file}` at line `#{line}`.") if line =~ /<any>/im
 end
@@ -107,7 +110,7 @@ def validatePackageJson(modified_files, diff)
     if shrinkwrap_exist && !modified_files.include?("shrinkwrap")
       warn("`package.json` was modified but `shrinkwrap` was not")
     end
-    
+
     # Fail when dependency version is used with `~` or `^`
     fail("Don't use `~` or `^` on dependencies version") if diff =~ /"[a-zA-Z0-9-]*":\s*"[~^]/
   end
@@ -124,7 +127,7 @@ if @platform == "nodejs"
     begin
       File.foreach(file) do |line|
         line = line.gsub('\n','').strip
-        
+
         checkForNodeVersion(file, line)
         checkForNpmInstallGlobal(file, line)
       end
@@ -227,11 +230,11 @@ if @platform == "ios"
           # ignore commented lines
           next if line =~ /^ *\/\//m
           # Warn when forced unwrapping is used
-          if line =~ /\w!\s*(.|\(|\{|\[|\]|\}|\))/m &&  #  check for any char followed by "!", ignoring if 
+          if line =~ /\w!\s*(.|\(|\{|\[|\]|\}|\))/m &&  #  check for any char followed by "!", ignoring if
             !(line =~ /@IBOutlet/m) && #  - line starts with "@IBOutlet"
             !(line =~ /\".*!.*"/m) && #  - "!" is inside quotes (aka in a string)
             !(line =~ /(var|func) [^ ]* *(:|->) *[^ ]*!/m)  #  - `var variable: AnyType!` or `func anyname() -> AnyType! {`
-            warn("Possible forced unwrapping found in `#{file}` at `#{line}`") 
+            warn("Possible forced unwrapping found in `#{file}` at `#{line}`")
           end
           # Warn print was added
           warn("`print(\"\")` was added in `#{file}` at line `#{line}`") if line =~ /print\(""\)/
@@ -250,7 +253,7 @@ end
 #    Android SECTION   #
 ########################
 if @platform == "android"
-  
+
   modified_files.each do |file|
     ext = File.extname(file)
     case ext
@@ -271,7 +274,7 @@ if @platform == "web"
     begin
       File.foreach(file) do |line|
         line = line.gsub('\n','').strip
-        
+
         checkForNodeVersion(file, line)
         checkForNpmInstallGlobal(file, line)
       end
