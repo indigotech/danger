@@ -1,4 +1,6 @@
 require 'find'
+require 'fileutils'
+require 'tmpdir'
 
 if !defined? @platform
   warn("No platform was provided to perform platform specific assertions")
@@ -176,12 +178,13 @@ def run_cpd_on_current_branch
 end
 
 def run_cpd_on_target_branch
-  dir = Dir.pwd
-  `mkdir target-branch`
-  `cp -r #{dir}/.git #{dir}/target-branch`
-  Dir.chdir "target-branch"
-  `git reset --hard origin/#{@target_branch}`
-  `pmd cpd --language #{@language} --minimum-tokens  #{@minimum_tokens} --files #{@directory} --ignore-identifiers | grep tokens | wc -l`.to_i
+  dir_path = Dir.pwd
+  Dir.mktmpdir do |dir_tmp|
+    `cp -r #{dir_path}/.git #{dir_tmp}`
+    Dir.chdir dir_tmp
+    `git reset --hard origin/#{@target_branch}`
+    `pmd cpd --language #{@language} --minimum-tokens  #{@minimum_tokens} --files #{@directory} --ignore-identifiers | grep tokens | wc -l`.to_i
+  end
 end
 
 ########################
