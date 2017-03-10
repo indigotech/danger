@@ -72,9 +72,9 @@ modified_files.each do |file|
       # Look for Amazon Secret keys in modified files
       warn("Possible amazon secret key hardcoded found in `#{file}` - `#{line}`") if line =~ /(?<![A-Za-z0-9\/+=])[A-Za-z0-9\/+=]{40}(?![A-Za-z0-9\/+=])/ && file != "yarn.lock" && file != "Podfile.lock"
     end
-    rescue
-      message "Could not read file #{file}, does it really exist?"
-    end
+  rescue
+    message "Could not read file #{file}, does it really exist?"
+  end
 end
 
 ########################
@@ -94,9 +94,14 @@ def checkForWeaklyTypedFunctionReturn(line)
   warn("Possibly returning 'any' in a function, prefer having a strongly typed return. `#{file}` at line `#{line}`.") if line =~ /<any>/im
 end
 
-def checkForNpmInstallGlobal(file, line)
+def checkForNpmInstallGlobal(file)
   # Warn developers that they are not supposed to use this flag
-  fail("`npm install` with flag `-g` was found in `#{file}` at `#{line}`. This is not recommended.") if line =~ /npm install -g/
+  fileDiff = git.diff_for_file(file)
+  # Ensure we keep using secure https:// references instead of http://
+  npmInstallMatches = fileDiff.patch.scan(/\+.*(npm install -g)|(npm install --global)/)
+  npmInstallMatches.each do |npmInstallMatch|
+    fail("`npm install` with flag `-g` or `--global` was found in `#{file}` at `#{npmInstallMatch}`. This is not recommended.") if npmInstallMatch
+  end
 end
 
 def validatePackageJson(modified_files, diff)
@@ -125,11 +130,11 @@ if @platform == "nodejs"
 
   modified_files.each do |file|
     begin
+      checkForNpmInstallGlobal(file)
       File.foreach(file) do |line|
         line = line.gsub('\n','').strip
 
         checkForNodeVersion(file, line)
-        checkForNpmInstallGlobal(file, line)
       end
     rescue
       message "Could not read file #{file}, does it really exist?"
