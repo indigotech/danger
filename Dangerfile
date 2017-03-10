@@ -227,7 +227,7 @@ if @platform == "ios"
       File.foreach(file) do |line|
         line = line.gsub('\n','').strip
         # Warn developers things that need to be done
-        warn("`TODO` was added in `#{file}` at line `#{line}`") if line =~ /^(#\s*.*?|\/\/\s*.*?)(TO\s*.*?DO)/mi
+        warn("`TODO` was added in `#{file}` at line `#{line}`") if line =~ /(#\s*|\/\/\s*)(TO\s*DO|TO_DO)/mi
 
         ext = File.extname(file)
         case ext
