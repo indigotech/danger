@@ -98,7 +98,7 @@ def checkForNpmInstallGlobal(file)
   # Warn developers that they are not supposed to use this flag
   fileDiff = git.diff_for_file(file)
   # Ensure we keep using secure https:// references instead of http://
-  npmInstallMatches = fileDiff.patch.scan(/npm install -g | npm install --global/)
+  npmInstallMatches = fileDiff.patch.scan(/\+.*(npm install -g)|(npm install --global)/)
   npmInstallMatches.each do |npmInstallMatch|
     fail("`npm install` with flag `-g` or `--global` was found in `#{file}` at `#{npmInstallMatch}`. This is not recommended.") if npmInstallMatch
   end
