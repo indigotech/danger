@@ -5,6 +5,191 @@ if !defined? @platform
   @platform = "" # avoid future crashes
 end
 
+########################
+#   FUNCTIONS SECTION  #
+########################
+
+def checkForRegex(file, regex)
+  fileDiff = git.diff_for_file(file)
+  resultMatches = fileDiff.patch.scan(regex)
+  resultMatches
+end
+
+# Node functions #
+
+def checkForEnginesVersion(file)
+  # Keep engines version synced between declarations
+  if file == "package.json"
+    # fileDiff = git.diff_for_file(file)
+    engines = ["node","npm","yarn"]
+    engines.each do |engine|
+      engineVersionMatches = checkForRegex(file, /\+.*(\"#{engine}\")/)
+      engineVersionMatches.each do |engineVersionMatch|
+        stripMatch = engineVersionMatch[0].gsub!('"', '`')
+        warn("#{stripMatch} version was modified in `package.json`. Remember to update #{stripMatch} version on `.travis.yml`, `.nvmrc` and `README`!") if engineVersionMatch
+      end
+    end
+  end
+  warn("`.nvmrc` was modified. Remember to update node version on `.travis.yml`, `package.json` and `README`!") if file && file == ".nvmrc"
+end
+
+def checkForWeaklyTypedFunctionReturn(file)
+  # Warn when a TypeScript file has a new function returning <any> instead of strongly typed.
+  # There are several situation that need to return just 'any', so to avoid having too many false positives
+  #   we are checking just <any> for now
+  returnAnyMatches = checkForRegex(file, /\+.*<any>/im)
+  returnAnyMatches.each do |returnAnyMatch|
+    warn("Possibly returning 'any' in a function, prefer having a strongly typed return. `#{file}` at line `#{returnAnyMatch}`.") if returnAnyMatch
+  end
+end
+
+def checkForNpmInstallGlobal(file)
+  # Warn developers that they are not supposed to use this flag
+  npmInstallMatches = checkForRegex(file, /\+.*npm install (-g|--global)/)
+  npmInstallMatches.each do |npmInstallMatch|
+    fail("`npm install` with flag `-g` or `--global` was found in `#{file}`. This is not recommended.") if npmInstallMatch
+  end
+end
+
+def validatePackageJson(modified_files, diff)
+  # Warn if 'package.json' was modified but 'yarn.lock' or 'shrinkwrap' was not
+  yarn_exist = File.file?("yarn.lock")
+  shrinkwrap_exist = File.file?("shrinkwrap")
+  if modified_files.include?("package.json")
+    if yarn_exist && !modified_files.include?("yarn.lock")
+      warn("`package.json` was modified but `yarn.lock` was not")
+    end
+    if shrinkwrap_exist && !modified_files.include?("shrinkwrap")
+      warn("`package.json` was modified but `shrinkwrap` was not")
+    end
+
+    # Fail when dependency version is used with `~` or `^`
+    fail("Don't use `~` or `^` on dependencies version") if diff =~ /\+.*"[a-zA-Z0-9-]*":\s*"[~^]/
+  end
+end
+
+# Common Functions #
+
+def checkHttps(file)
+  # Ensure we keep using secure https:// references instead of http://
+  ignoreWarn = !!(file =~ /.*\/(drawable|layout)\/.*/)
+  if !ignoreWarn
+    httpMatches = checkForRegex(file, /\+.*http:\/\/.*/)
+    httpMatches.each do |httpMatch|
+      warn("Detected unsecure `http://` use in `#{file}` section `#{httpMatch}`") if httpMatch
+    end
+  end
+end
+
+def checkRebase(file)
+  # Make sure resolves merges or rebases conflict issues
+  rebaseMatches = checkForRegex(file, /^>>>>>>>/)
+  rebaseMatches.each do |rebaseMatch|
+    fail("Commited file without resolving merges/rebases conflict issues on `#{file}` - `#{rebaseMatch}`") if rebaseMatch
+  end
+end
+
+def checkAmazonKeys(file)
+  rejected_files = ["yarn.lock", "Podfile.lock"]
+  ext = File.extname(file)
+  rejected_files << file if ext == (".xib")
+  # Look for Amazon Secret keys in modified files
+  amazonKeyMatches = checkForRegex(file, /\+.*(?<![A-Za-z0-9\/+=])[A-Za-z0-9\/+=]{40}(?![A-Za-z0-9\/+=])/)
+  amazonKeyMatches.each do |amazonKeyMatch|
+    warn("Possible amazon secret key hardcoded found in `#{file}` - `#{amazonKeyMatch}`") if amazonKeyMatch && !rejected_files.include?(file)
+  end
+end
+
+# iOS Functions #
+
+def checkAtsExceptions(file)
+  # Warn that ATS Exception is set in plist
+  atsExceptionMatches = checkForRegex(file, /\+.*NSAppTransportSecurity/)
+  atsExceptionMatches.each do |atsExceptionMatch|
+    warn("ATS Exception found in plist `#{file}`") if atsExceptionMatch
+  end
+end
+
+def checkLandscapeOrientation(file)
+  # Warn that Landscape orientation is set in plist
+  landscapeMatches = checkForRegex(file, /\+.*UIInterfaceOrientationLandscape/)
+  landscapeMatches.each do |landscapeMatch|
+    message("Landscape orientation is set in plist `#{file}`") if landscapeMatch
+  end
+end
+
+def checkCakefileMissconfig(file)
+  # Warn that some changes can 'break' provisionings and sign certificates configurations
+  cakefileMatches = checkForRegex(file, /\+.*(PROVISIONING_PROFILE_SPECIFIER|BUNDLE_ID|DEVELOPMENT_TEAM|CODE_SIGN_IDENTITY)/)
+  cakefileMatches.each do |cakefileMatch|
+    warn("Lines modified on `Cakefile` can missconfigure project provisionings and sign certificates") if cakefileMatch
+  end
+end
+
+def validatePodfile(modified_files)
+  # Warn if 'Podfile' was modified but 'Podfile.lock' was not
+  if modified_files.include?("Podfile")
+    if !modified_files.include?("Podfile.lock")
+      warn("`Podfile` was modified but `Podfile.lock` was not")
+    else
+      warn("`Podfile` was modified")
+    end
+    begin
+      checkExternalPods("Podfile")
+      checkPodWithoutVersion("Podfile")
+    rescue
+      message "Could not read file Podfile, does it really exist?"
+    end
+  end
+end
+
+def checkExternalPods(file)
+  # Warn pods being loaded from external git repos
+  podExternalMatches = checkForRegex(file, /\+.*:git/)
+  podExternalMatches.each do |podExternalMatch|
+    message("`Podfile` has pods being loaded from external git repos at `#{podExternalMatch}`") if podExternalMatch
+  end
+end
+
+def checkPodWithoutVersion(file)
+  # Warn when no version is specified
+  podNoVersionMatches = checkForRegex(file, /\+.*pod\s*'[a-zA-Z0-9-]*'(?!,)/)
+  podNoVersionMatches.each do |podNoVersionMatch|
+    warn("No version specified for pod at `#{podNoVersionMatch}`") if podNoVersionMatch
+  end
+end
+
+def validatePlistFiles(modified_files)
+  check_next_line = false
+  plist_files_paths = modified_files.select { |path| path.include?("Supporting") && path =~ /.*Info\.plist$/ }
+
+  plist_files_paths.each do |file|
+    begin
+      checkAtsExceptions(file)
+      checkLandscapeOrientation(file)
+
+      File.foreach(file) do |line|
+        line = line.gsub('\n','').strip
+        # Warn Facebook ID hardcoded
+        if check_next_line
+          warn("Facebook App ID is hardcoded in plist `#{file}`") if line =~ /\+.*<string>\d*<\/string>/
+          check_next_line = false
+        end
+        check_next_line = true if line =~ /FacebookAppID/
+      end
+    rescue
+      message "Could not read file #{file}, does it really exist?"
+    end
+  end
+end
+
+def checkTodo(file)
+  # Warn developers things that need to be done
+  todoMatches = checkForRegex(file, /\+.*(#\s*|\/\/\s*)(TO\s*DO|TO_DO)/mi)
+  todoMatches.each do |todoMatch|
+    warn("`TODO` was added in `#{file}`") if todoMatch
+  end
+end
 
 ########################
 #    COMMON SECTION    #
@@ -58,79 +243,13 @@ end
 
 modified_files.each do |file|
   begin
-    ignoreWarn = !!(file =~ /.*\/(drawable|layout)\/.*/)
-    fileDiff = git.diff_for_file(file)
-    # Ensure we keep using secure https:// references instead of http://
-    httpMatches = fileDiff.patch.scan(/\+.*http:\/\/.*/)
-    httpMatches.each do |httpMatch|
-      warn("Detected unsecure `http://` use in `#{file}` section `#{httpMatch}`") if httpMatch && !ignoreWarn
-    end
-
-    File.foreach(file) do |line|
-      line = line.gsub('\n','').strip
-      # Make sure resolves merges or rebases conflict issues
-      fail("Commited file without resolving merges/rebases conflict issues on `#{file}` - `#{line}`") if line =~ /^>>>>>>>/
-      # Look for Amazon Secret keys in modified files
-      warn("Possible amazon secret key hardcoded found in `#{file}` - `#{line}`") if line =~ /(?<![A-Za-z0-9\/+=])[A-Za-z0-9\/+=]{40}(?![A-Za-z0-9\/+=])/ && file != "yarn.lock" && file != "Podfile.lock"
-    end
+    checkHttps(file)
+    checkRebase(file)
+    checkAmazonKeys(file)
   rescue
     message "Could not read file #{file}, does it really exist?"
   end
 end
-
-########################
-#   FUNCTIONS SECTION  #
-########################
-
-def checkForEnginesVersion(file)
-  # Keep engines version synced between declarations
-  if file == "package.json"
-    fileDiff = git.diff_for_file(file)
-    engines = ["node","npm","yarn"]
-    engines.each do |engine|
-      engineVersionMatches = fileDiff.patch.scan(/\+.*(\"#{engine}\")/)
-      engineVersionMatches.each do |engineVersionMatch|
-        stripMatch = engineVersionMatch[0].gsub!('"', '`')
-        warn("#{stripMatch} version was modified in `package.json`. Remember to update #{stripMatch} version on `.travis.yml`, `.nvmrc` and `README`!") if engineVersionMatch
-      end
-    end
-  end
-  warn("`.nvmrc` was modified. Remember to update node version on `.travis.yml`, `package.json` and `README`!") if file && file == ".nvmrc"
-end
-
-def checkForWeaklyTypedFunctionReturn(line)
-  # Warn when a TypeScript file has a new function returning <any> instead of strongly typed.
-  # There are several situation that need to return just 'any', so to avoid having too many false positives
-  #   we are checking just <any> for now
-  warn("Possibly returning 'any' in a function, prefer having a strongly typed return. `#{file}` at line `#{line}`.") if line =~ /<any>/im
-end
-
-def checkForNpmInstallGlobal(file)
-  # Warn developers that they are not supposed to use this flag
-  fileDiff = git.diff_for_file(file)
-  npmInstallMatches = fileDiff.patch.scan(/\+.*npm install (-g|--global)/)
-  npmInstallMatches.each do |npmInstallMatch|
-    fail("`npm install` with flag `-g` or `--global` was found in `#{file}`. This is not recommended.") if npmInstallMatch
-  end
-end
-
-def validatePackageJson(modified_files, diff)
-  # Warn if 'package.json' was modified but 'yarn.lock' or 'shrinkwrap' was not
-  yarn_exist = File.file?("yarn.lock")
-  shrinkwrap_exist = File.file?("shrinkwrap")
-  if modified_files.include?("package.json")
-    if yarn_exist && !modified_files.include?("yarn.lock")
-      warn("`package.json` was modified but `yarn.lock` was not")
-    end
-    if shrinkwrap_exist && !modified_files.include?("shrinkwrap")
-      warn("`package.json` was modified but `shrinkwrap` was not")
-    end
-
-    # Fail when dependency version is used with `~` or `^`
-    fail("Don't use `~` or `^` on dependencies version") if diff =~ /"[a-zA-Z0-9-]*":\s*"[~^]/
-  end
-end
-
 
 
 ########################
@@ -153,11 +272,7 @@ if @platform == "nodejs"
       message("`#{file}` was modified")
     when ".ts"
       begin
-        File.foreach(file) do |line|
-          line = line.gsub('\n','').strip
-
-          checkForWeaklyTypedFunctionReturn(line)
-        end
+        checkForWeaklyTypedFunctionReturn(file)
       rescue
         message "Could not read file #{file}, does it really exist?"
       end
@@ -178,63 +293,16 @@ end
 ########################
 if @platform == "ios"
 
-  # Warn if 'Podfile' was modified but 'Podfile.lock' was not
-  if modified_files.include?("Podfile")
-    if !modified_files.include?("Podfile.lock")
-      warn("`Podfile` was modified but `Podfile.lock` was not")
-    else
-      warn("`Podfile` was modified")
-    end
-  end
-
-  # Warn that some changes can 'break' provisionings and sign certificates configurations
-  if modified_files.include?("Cakefile")
-    diff = github.pr_diff
-    warn("Lines modified on `Cakefile` can missconfigure project provisionings and sign certificates") if diff =~ /(PROVISIONING_PROFILE_SPECIFIER|BUNDLE_ID|DEVELOPMENT_TEAM|CODE_SIGN_IDENTITY)/
-  end
-
-  check_next_line = false
-  plist_files_paths = modified_files.select { |path| path.include?("Supporting") && path =~ /.*Info\.plist$/ }
-
-  plist_files_paths.each do |file|
-    begin
-      File.foreach(file) do |line|
-        line = line.gsub('\n','').strip
-        # Warn that ATS Exception is set in plist
-        warn("ATS Exception found in plist `#{file}`") if line =~ /NSAppTransportSecurity/
-        # Warn that Landscape orientation is set in plist
-        message("Landscape orientation is set in plist `#{file}`") if line =~ /UIInterfaceOrientationLandscape/
-        # Warn Facebook ID hardcoded
-        if check_next_line
-          warn("Facebook App ID is hardcoded in plist `#{file}`") if line =~ /<string>\d*<\/string>/
-          check_next_line = false
-        end
-        check_next_line = true if line =~ /FacebookAppID/
-      end
-    rescue
-      message "Could not read file #{file}, does it really exist?"
-    end
-  end
-
-  begin
-    File.foreach("Podfile") do |line|
-      line = line.gsub('\n','').strip
-      # Warn pods being loaded from external git repos
-      message("`Podfile` has pods being loaded from external git repos at `#{line}`") if line =~ /:git/
-      # Warn when no version is specified
-      warn("No version specified for pod at `#{line}`") if line =~ /pod\s*'[a-zA-Z0-9-]*'(?!,)/
-    end
-  rescue
-    message "Could not read file #{file}, does it really exist?"
-  end
+  validatePodfile(modified_files)
+  checkCakefileMissconfig("Cakefile") if modified_files.include?("Cakefile")
+  validatePlistFiles(modified_files)
 
   modified_files.each do |file|
     begin
+      checkTodo(file)
+
       File.foreach(file) do |line|
         line = line.gsub('\n','').strip
-        # Warn developers things that need to be done
-        warn("`TODO` was added in `#{file}` at line `#{line}`") if line =~ /(#\s*|\/\/\s*)(TO\s*DO|TO_DO)/mi
-
         ext = File.extname(file)
         case ext
         when ".swift"
@@ -296,11 +364,7 @@ if @platform == "web"
       message("`#{file}` was modified")
     when ".ts"
       begin
-        File.foreach(file) do |line|
-          line = line.gsub('\n','').strip
-
-          checkForWeaklyTypedFunctionReturn(line)
-        end
+        checkForWeaklyTypedFunctionReturn(file)
       rescue
         message "Could not read file #{file}, does it really exist?"
       end
