@@ -36,7 +36,7 @@ if github.pr_body.length < 5
 end
 
 # Common files
-files_to_check = ["Gemfile.lock", ".travis.yml", ".gitignore"]
+files_to_check = ["Gemfile.lock", ".travis.yml", ".gitignore", "Dangerfile"]
 # Node files
 files_to_check += ["yarn.lock", "docker-compose.yml", "Procfile", "npm-shrinkwrap.json", "node_modules", "tasks/options/env.coffee", "tslint.json"]
 # iOS files
