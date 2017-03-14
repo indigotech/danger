@@ -107,7 +107,7 @@ end
 def checkForNpmInstallGlobal(file)
   # Warn developers that they are not supposed to use this flag
   fileDiff = git.diff_for_file(file)
-  npmInstallMatches = fileDiff.patch.scan(/\+.*(npm install) (-g|--global)/)
+  npmInstallMatches = fileDiff.patch.scan(/\+.*npm install (-g|--global)/)
   npmInstallMatches.each do |npmInstallMatch|
     fail("`npm install` with flag `-g` or `--global` was found in `#{file}`. This is not recommended.") if npmInstallMatch
   end
