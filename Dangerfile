@@ -82,12 +82,17 @@ end
 ########################
 
 def checkForEnginesVersion(file)
-  # Keep node version synced between declarations
-  fileDiff = git.diff_for_file(file)
-  nodeVersionMatches = fileDiff.patch.scan(/\+.*("node"|"npm"|"yarn")/)
-  nodeVersionMatches.each do |nodeVersionMatch|
-    stripMatch = nodeVersionMatch[0].gsub!('"', '`')
-    warn("#{stripMatch} version was modified in `package.json`. Remember to update #{stripMatch} version on `.travis.yml`, `.nvmrc` and `README`!") if file && nodeVersionMatch && file == "package.json"
+  # Keep engines version synced between declarations
+  if file == "package.json"
+    fileDiff = git.diff_for_file(file)
+    engines = ["node","npm","yarn"]
+    engines.each do |engine|
+      engineVersionMatches = fileDiff.patch.scan(/\+.*(\"#{engine}\")/)
+      engineVersionMatches.each do |engineVersionMatch|
+        stripMatch = engineVersionMatch[0].gsub!('"', '`')
+        warn("#{stripMatch} version was modified in `package.json`. Remember to update #{stripMatch} version on `.travis.yml`, `.nvmrc` and `README`!") if engineVersionMatch
+      end
+    end
   end
   warn("`.nvmrc` was modified. Remember to update node version on `.travis.yml`, `package.json` and `README`!") if file && file == ".nvmrc"
 end
