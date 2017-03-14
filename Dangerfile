@@ -81,9 +81,14 @@ end
 #   FUNCTIONS SECTION  #
 ########################
 
-def checkForNodeVersion(file, line)
+def checkForEnginesVersion(file)
   # Keep node version synced between declarations
-  warn("`package.json` node version was modified. Remember to update node version on `.travis.yml`, `.nvmrc` and `README`!") if file && line && file == "package.json" && line =~ /"node":/
+  fileDiff = git.diff_for_file(file)
+  nodeVersionMatches = fileDiff.patch.scan(/\+.*("node"|"npm"|"yarn")/)
+  nodeVersionMatches.each do |nodeVersionMatch|
+    stripMatch = nodeVersionMatch[0].gsub!('"', '`')
+    warn("#{stripMatch} version was modified in `package.json`. Remember to update #{stripMatch} version on `.travis.yml`, `.nvmrc` and `README`!") if file && nodeVersionMatch && file == "package.json"
+  end
   warn("`.nvmrc` was modified. Remember to update node version on `.travis.yml`, `package.json` and `README`!") if file && file == ".nvmrc"
 end
 
@@ -97,10 +102,9 @@ end
 def checkForNpmInstallGlobal(file)
   # Warn developers that they are not supposed to use this flag
   fileDiff = git.diff_for_file(file)
-  # Ensure we keep using secure https:// references instead of http://
-  npmInstallMatches = fileDiff.patch.scan(/\+.*(npm install -g)|(npm install --global)/)
+  npmInstallMatches = fileDiff.patch.scan(/\+.*(npm install) (-g|--global)/)
   npmInstallMatches.each do |npmInstallMatch|
-    fail("`npm install` with flag `-g` or `--global` was found in `#{file}` at `#{npmInstallMatch}`. This is not recommended.") if npmInstallMatch
+    fail("`npm install` with flag `-g` or `--global` was found in `#{file}`. This is not recommended.") if npmInstallMatch
   end
 end
 
@@ -131,11 +135,7 @@ if @platform == "nodejs"
   modified_files.each do |file|
     begin
       checkForNpmInstallGlobal(file)
-      File.foreach(file) do |line|
-        line = line.gsub('\n','').strip
-
-        checkForNodeVersion(file, line)
-      end
+      checkForEnginesVersion(file)
     rescue
       message "Could not read file #{file}, does it really exist?"
     end
@@ -277,12 +277,8 @@ end
 if @platform == "web"
   modified_files.each do |file|
     begin
-      File.foreach(file) do |line|
-        line = line.gsub('\n','').strip
-
-        checkForNodeVersion(file, line)
-        checkForNpmInstallGlobal(file, line)
-      end
+      checkForEnginesVersion(file)
+      checkForNpmInstallGlobal(file)
     rescue
       message "Could not read file #{file}, does it really exist?"
     end
