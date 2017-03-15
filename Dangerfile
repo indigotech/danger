@@ -58,11 +58,12 @@ end
 
 modified_files.each do |file|
   begin
+    ignoreWarn = !!(file =~ /.*\/(drawable|layout)\/.*/)
     fileDiff = git.diff_for_file(file)
     # Ensure we keep using secure https:// references instead of http://
     httpMatches = fileDiff.patch.scan(/\+.*http:\/\/.*/)
     httpMatches.each do |httpMatch|
-      warn("Detected unsecure `http://` use in `#{file}` section `#{httpMatch}`") if httpMatch
+      warn("Detected unsecure `http://` use in `#{file}` section `#{httpMatch}`") if httpMatch && !ignoreWarn
     end
 
     File.foreach(file) do |line|
