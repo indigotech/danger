@@ -9,13 +9,63 @@ end
 #   FUNCTIONS SECTION  #
 ########################
 
+def checkForFile(file)
+  checkForFileCommon(file)
+  case @platform
+  when "nodejs"
+    checkForFileNode(file)
+  when "ios"
+    checkForFileIos(file)
+  when "android"
+    checkForFileAndroid(file)
+  when "web"
+    checkForFileWeb(file)
+  end
+end
+
+def checkForFileCommon(file)
+  checkHttps(file)
+  checkRebase(file)
+  checkAmazonKeys(file)
+end
+
+def checkForFileNode(file)
+  checkForNpmInstallGlobal(file)
+  checkForEnginesVersion(file)
+  validateSpecificExtensions(file)
+end
+
+def checkForFileIos(file)
+  checkTodo(file)
+  validateSwiftFiles(file)
+end
+
+def checkForFileAndroid(file)
+  ext = File.extname(file)
+  case ext
+  # Warn when a file .gradle is modified
+  when ".gradle"
+    message("`#{file}` was modified")
+  end
+  # Warn when a FileManifest.xml is modified
+  message("`#{file}` was modified") if file =~ /Manifest\.xml/
+end
+
+def checkForFileWeb(file)
+  checkForEnginesVersion(file)
+  checkForNpmInstallGlobal(file)
+  validateSwiftFiles(file)
+end
+
 def checkForRegex(file, regex)
   fileDiff = git.diff_for_file(file)
   resultMatches = fileDiff.patch.scan(regex)
   resultMatches
 end
 
-# Node functions #
+########################
+#    NODE FUNCTIONS    #
+########################
 
 def checkForEnginesVersion(file)
   # Keep engines version synced between declarations
@@ -68,7 +118,26 @@ def validatePackageJson(modified_files, diff)
   end
 end
 
-# Common Functions #
+def validateSpecificExtensions(file)
+  # Look for files with spefic extension in modified files
+  ext = File.extname(file)
+  case ext
+  when ".env"
+    message("`#{file}` was modified")
+  when ".styl"
+    message("`#{file}` was modified")
+  when ".ts"
+    begin
+      checkForWeaklyTypedFunctionReturn(file)
+    rescue
+      message "Could not read file #{file}, does it really exist?"
+    end
+  end
+end
+
+########################
+#   COMMON FUNCTIONS   #
+########################
 
 def checkHttps(file)
   # Ensure we keep using secure https:// references instead of http://
@@ -100,7 +169,9 @@ def checkAmazonKeys(file)
   end
 end
 
-# iOS Functions #
+########################
+#      iOS FUNCTIONS   #
+########################
 
 def checkAtsExceptions(file)
   # Warn that ATS Exception is set in plist
@@ -191,9 +262,30 @@ def checkTodo(file)
   end
 end
 
-########################
-#    COMMON SECTION    #
-########################
+def validateSwiftFiles(file)
+  File.foreach(file) do |line|
+    line = line.gsub('\n','').strip
+    ext = File.extname(file)
+    case ext
+    when ".swift"
+      # ignore commented lines
+      next if line =~ /^ *\/\//m
+      # Warn when forced unwrapping is used
+      if line =~ /\w!\s*(.|\(|\{|\[|\]|\}|\))/m &&  #  check for any char followed by "!", ignoring if
+        !(line =~ /@IBOutlet/m) && #  - line starts with "@IBOutlet"
+        !(line =~ /\".*!.*"/m) && #  - "!" is inside quotes (aka in a string)
+        !(line =~ /(var|func) [^ ]* *(:|->) *[^ ]*!/m)  #  - `var variable: AnyType!` or `func anyname() -> AnyType! {`
+        warn("Possible forced unwrapping found in `#{file}` at `#{line}`")
+      end
+      # Warn print was added
+      warn("`print(\"\")` was added in `#{file}` at line `#{line}`") if line =~ /print\(""\)/
+      # Warn developers to use another alternatives
+      warn("`fatalError` was added in `#{file}` at line `#{line}` is not possible use error handlers or throw an exception?") if line =~ /fatalError\(/
+    end
+  end
+end
+
+###########################################
 
 # moved files have a pattern that were  messing with file reading
 modified_files = git.modified_files.select { |path| !path.include? "=>" }
@@ -241,135 +333,22 @@ if modified_files.include?("Gemfile")
   end
 end
 
-modified_files.each do |file|
-  begin
-    checkHttps(file)
-    checkRebase(file)
-    checkAmazonKeys(file)
-  rescue
-    message "Could not read file #{file}, does it really exist?"
-  end
-end
-
-
-########################
-#   Node.JS SECTION    #
-########################
-if @platform == "nodejs"
-
-  modified_files.each do |file|
-    begin
-      checkForNpmInstallGlobal(file)
-      checkForEnginesVersion(file)
-    rescue
-      message "Could not read file #{file}, does it really exist?"
-    end
-
-    # Look for files with spefic extension in modified files
-    ext = File.extname(file)
-    case ext
-    when ".env"
-      message("`#{file}` was modified")
-    when ".ts"
-      begin
-        checkForWeaklyTypedFunctionReturn(file)
-      rescue
-        message "Could not read file #{file}, does it really exist?"
-      end
-    end
-
-  end
-
-  # Warn if 'console.log' was added
-  diff = github.pr_diff
-  warn("`console.log` added") if diff =~ /\+\s*console\.log/
-
-  validatePackageJson(modified_files, diff)
-end
-
-
-########################
-#      iOS SECTION     #
-########################
 if @platform == "ios"
-
   validatePodfile(modified_files)
   checkCakefileMissconfig("Cakefile") if modified_files.include?("Cakefile")
   validatePlistFiles(modified_files)
-
-  modified_files.each do |file|
-    begin
-      checkTodo(file)
-
-      File.foreach(file) do |line|
-        line = line.gsub('\n','').strip
-        ext = File.extname(file)
-        case ext
-        when ".swift"
-          # ignore commented lines
-          next if line =~ /^ *\/\//m
-          # Warn when forced unwrapping is used
-          if line =~ /\w!\s*(.|\(|\{|\[|\]|\}|\))/m &&  #  check for any char followed by "!", ignoring if
-            !(line =~ /@IBOutlet/m) && #  - line starts with "@IBOutlet"
-            !(line =~ /\".*!.*"/m) && #  - "!" is inside quotes (aka in a string)
-            !(line =~ /(var|func) [^ ]* *(:|->) *[^ ]*!/m)  #  - `var variable: AnyType!` or `func anyname() -> AnyType! {`
-            warn("Possible forced unwrapping found in `#{file}` at `#{line}`")
-          end
-          # Warn print was added
-          warn("`print(\"\")` was added in `#{file}` at line `#{line}`") if line =~ /print\(""\)/
-          # Warn developers to use another alternatives
-          warn("`fatalError` was added in `#{file}` at line `#{line}` is not possible use error handlers or throw an exception?") if line =~ /fatalError\(/
-        end
-      end
-    rescue
-      message "Could not read file #{file}, does it really exist?"
-    end
-  end
-
+elsif @platform == "nodejs"
+  # Warn if 'console.log' was added
+  diff = github.pr_diff
+  warn("`console.log` added") if diff =~ /\+\s*console\.log/
 end
 
-########################
-#    Android SECTION   #
-########################
-if @platform == "android"
+validatePackageJson(modified_files, github.pr_diff) if @platform == "nodejs" || @platform == "web"
 
-  modified_files.each do |file|
-    ext = File.extname(file)
-    case ext
-    # Warn when a file .gradle is modified
-    when ".gradle"
-      message("`#{file}` was modified")
-    end
-    # Warn when a FileManifest.xml is modified
-    message("`#{file}` was modified") if file =~ /Manifest\.xml/
+modified_files.each do |file|
+  begin
+    checkForFile(file)
+  rescue
+    message "Could not read file #{file}, does it really exist?"
   end
-end
-
-########################
-#      Web SECTION     #
-########################
-if @platform == "web"
-  modified_files.each do |file|
-    begin
-      checkForEnginesVersion(file)
-      checkForNpmInstallGlobal(file)
-    rescue
-      message "Could not read file #{file}, does it really exist?"
-    end
-
-    ext = File.extname(file)
-    case ext
-    # Warn when a file .style is modified
-    when ".styl"
-      message("`#{file}` was modified")
-    when ".ts"
-      begin
-        checkForWeaklyTypedFunctionReturn(file)
-      rescue
-        message "Could not read file #{file}, does it really exist?"
-      end
-    end
-  end
-
-  validatePackageJson(modified_files, github.pr_diff)
 end
