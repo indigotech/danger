@@ -382,8 +382,8 @@ end
 
 def check_provisionings
   Dir["#{ENV['HOME']}/Library/MobileDevice/Provisioning Profiles/*"].each do |file|
-    expiring_date = Date.parse `/usr/libexec/PlistBuddy -c 'Print :ExpirationDate' /dev/stdin <<< $(security cms -D -i #{file.sub ' ', '\ '})`
-    provisioning_name = `/usr/libexec/PlistBuddy -c 'Print :Name' /dev/stdin <<< $(security cms -D -i #{file.sub ' ', '\ '})`
+    expiring_date = Date.parse `/usr/libexec/PlistBuddy -c 'Print :ExpirationDate' /dev/stdin <<< $(security cms -D -i #{file.sub ' ', '\ '} 2> /dev/null)`
+    provisioning_name = `/usr/libexec/PlistBuddy -c 'Print :Name' /dev/stdin <<< $(security cms -D -i #{file.sub ' ', '\ '} 2> /dev/null)`
     if expiring_date < get_next_month
       warn "The provisioning #{provisioning_name} is going to expire soon. Expiring date: #{expiring_date}"
     end
@@ -394,7 +394,7 @@ def check_certificates
   Dir["#{ENV['HOME']}/Library/MobileDevice/Provisioning Profiles/*"].each do |file|
     i = 0
     loop do
-      certificate = `/usr/libexec/PlistBuddy -c 'Print :DeveloperCertificates:#{i}' /dev/stdin <<< $(security cms -D -i #{file.sub ' ', '\ '}) > cer.pem`
+      certificate = `/usr/libexec/PlistBuddy -c 'Print :DeveloperCertificates:#{i}' /dev/stdin <<< $(security cms -D -i #{file.sub ' ', '\ '} 2> /dev/null) > cer.pem`
       certificate_subject = `openssl x509 -inform der -subject -in cer.pem | grep subject`
       not_after = `openssl x509 -inform der -enddate -in cer.pem | grep notAfter`.split('=')[1]
       expiring_date = Date.parse not_after
