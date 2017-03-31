@@ -7,11 +7,14 @@ if !defined? @platform
   @platform = "" # avoid future crashes
 end
 
-if [@minimum_tokens, @language, @directory, @ssh, @target_branch].any? { |e| e.nil? }
-  warn("Variables for checking duplicated code not defined, skipping this validation.")
-  @check_cdp = false
-else
-  @check_cdp = true
+def willCheckCdp?(opts)
+  @language = opts[:language]
+  @directory = opts[:directory]
+
+  @minimum_tokens = 100
+  @target_branch = ENV['TRAVIS_BRANCH'] || "develop"
+  @check_cdp = true if @language && @directory
+  message("Vars for Copy Paste Detector were not set") if !@check_cdp
 end
 
 ########################
@@ -82,6 +85,8 @@ def exceptionMessages(file)
     message "One of modified files could not be read, does it really exist?"
   end
 end
+
+willCheckCdp?(@cdp_opts)
 
 ########################
 #    NODE FUNCTIONS    #
@@ -170,6 +175,8 @@ end
 def has_more_duplicated_code?
     current_branch_cpd_results = run_cpd_on_current_branch
     target_branch_cpd_results = run_cpd_on_target_branch
+    Dir.chdir("..")
+    FileUtils.rm_rf "tmp"
     current_branch_cpd_results > target_branch_cpd_results
 end
 
@@ -179,12 +186,11 @@ end
 
 def run_cpd_on_target_branch
   dir_path = Dir.pwd
-  Dir.mktmpdir do |dir_tmp|
-    `cp -r #{dir_path}/.git #{dir_tmp}`
-    Dir.chdir dir_tmp
-    `git reset --hard origin/#{@target_branch}`
-    `pmd cpd --language #{@language} --minimum-tokens  #{@minimum_tokens} --files #{@directory} --ignore-identifiers | grep tokens | wc -l`.to_i
-  end
+  Dir.mkdir("tmp")
+  `cp -r #{dir_path}/.git tmp`
+  Dir.chdir("tmp")
+  `git reset --hard origin/#{@target_branch}`
+  `pmd cpd --language #{@language} --minimum-tokens  #{@minimum_tokens} --files #{@directory} --ignore-identifiers | grep tokens | wc -l`.to_i
 end
 
 ########################
