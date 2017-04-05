@@ -7,14 +7,23 @@ if !defined? @platform
   @platform = "" # avoid future crashes
 end
 
-def willCheckCdp?(opts)
+def checkCpd(opts)
   @language = opts[:language]
   @directory = opts[:directory]
 
   @minimum_tokens = 100
   @target_branch = ENV['TRAVIS_BRANCH'] || "develop"
-  @check_cdp = true if @language && @directory
-  message("Vars for Copy Paste Detector were not set") if !@check_cdp
+  @check_cpd = true if @language && @directory
+  message("Vars for Copy Paste Detector were not set") if !@check_cpd
+end
+
+def checkPmdInstalled
+  installed = `brew ls --versions pmd`
+  if installed.empty?
+    message("`pmd` not found. Install `pmd` to use Copy Paste Detector.")
+  else
+    checkCpd(@cpd_opts)
+  end
 end
 
 ########################
@@ -86,7 +95,7 @@ def exceptionMessages(file)
   end
 end
 
-willCheckCdp?(@cdp_opts)
+checkPmdInstalled
 
 ########################
 #    NODE FUNCTIONS    #
