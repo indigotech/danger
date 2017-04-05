@@ -17,15 +17,6 @@ def checkCpd(opts)
   message("Vars for Copy Paste Detector were not set") if !@check_cpd
 end
 
-def checkPmdInstalled
-  installed = `brew ls --versions pmd`
-  if installed.empty?
-    message("`pmd` not found. Install `pmd` to use Copy Paste Detector.")
-  else
-    checkCpd(@cpd_opts)
-  end
-end
-
 ########################
 #   FUNCTIONS SECTION  #
 ########################
@@ -95,7 +86,7 @@ def exceptionMessages(file)
   end
 end
 
-checkPmdInstalled
+checkCpd(@cpd_opts)
 
 ########################
 #    NODE FUNCTIONS    #
