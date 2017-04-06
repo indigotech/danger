@@ -17,6 +17,15 @@ def checkCpd(opts)
   message("Vars for Copy Paste Detector were not set") if !@check_cpd
 end
 
+def checkPmdInstalled
+  installed = system("which pmd")
+  if !installed
+    message("`pmd` not found. Install `pmd` to use Copy Paste Detector.")
+  else
+    checkCpd(@cpd_opts)
+  end
+end
+
 ########################
 #   FUNCTIONS SECTION  #
 ########################
@@ -86,7 +95,7 @@ def exceptionMessages(file)
   end
 end
 
-checkCpd(@cpd_opts)
+checkPmdInstalled
 
 ########################
 #    NODE FUNCTIONS    #
@@ -187,7 +196,7 @@ end
 def run_cpd_on_target_branch
   dir_path = Dir.pwd
   Dir.mkdir("tmp")
-  `cp -r #{dir_path}/.git tmp`
+  `cp -r "#{dir_path}"/.git tmp`
   Dir.chdir("tmp")
   `git reset --hard origin/#{@target_branch}`
   `pmd cpd --language #{@language} --minimum-tokens  #{@minimum_tokens} --files #{@directory} --ignore-identifiers | grep tokens | wc -l`.to_i
