@@ -63,6 +63,14 @@ def checkForRegex(file, regex)
   resultMatches
 end
 
+def exceptionMessages(file)
+  if File.file?(file)
+    message "Something went wrong checking `#{file}`. Check your Dangerfile"
+  else
+    message "One of modified files could not be read, does it really exist?"
+  end
+end
+
 ########################
 #    NODE FUNCTIONS    #
 ########################
@@ -87,7 +95,7 @@ def checkForWeaklyTypedFunctionReturn(file)
   # Warn when a TypeScript file has a new function returning <any> instead of strongly typed.
   # There are several situation that need to return just 'any', so to avoid having too many false positives
   #   we are checking just <any> for now
-  returnAnyMatches = checkForRegex(file, /\+.*<any>/im)
+  returnAnyMatches = checkForRegex(file, /\+.*<any>/i)
   returnAnyMatches.each do |returnAnyMatch|
     warn("Possibly returning 'any' in a function, prefer having a strongly typed return. `#{file}` at line `#{returnAnyMatch}`.") if returnAnyMatch
   end
@@ -95,9 +103,12 @@ end
 
 def checkForNpmInstallGlobal(file)
   # Warn developers that they are not supposed to use this flag
-  npmInstallMatches = checkForRegex(file, /\+.*npm install (-g|--global)/)
-  npmInstallMatches.each do |npmInstallMatch|
-    fail("`npm install` with flag `-g` or `--global` was found in `#{file}`. This is not recommended.") if npmInstallMatch
+  rejected_files = ["README.md"]
+  if !rejected_files.include?(file)
+    npmInstallMatches = checkForRegex(file, /\+.*npm install (-g|--global)/)
+    npmInstallMatches.each do |npmInstallMatch|
+      fail("`npm install` with flag `-g` or `--global` was found in `#{file}`. This is not recommended.") if npmInstallMatch
+    end
   end
 end
 
@@ -130,7 +141,7 @@ def validateSpecificExtensions(file)
     begin
       checkForWeaklyTypedFunctionReturn(file)
     rescue
-      message "Could not read file #{file}, does it really exist?"
+      exceptionMessages(file)
     end
   end
 end
@@ -209,7 +220,7 @@ def validatePodfile(modified_files)
       checkExternalPods("Podfile")
       checkPodWithoutVersion("Podfile")
     rescue
-      message "Could not read file Podfile, does it really exist?"
+      exceptionMessages(file)
     end
   end
 end
@@ -249,7 +260,7 @@ def validatePlistFiles(modified_files)
         check_next_line = true if line =~ /FacebookAppID/
       end
     rescue
-      message "Could not read file #{file}, does it really exist?"
+      exceptionMessages(file)
     end
   end
 end
@@ -349,6 +360,6 @@ modified_files.each do |file|
   begin
     checkForFile(file)
   rescue
-    message "Could not read file #{file}, does it really exist?"
+    exceptionMessages(file)
   end
 end
