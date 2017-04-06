@@ -14,6 +14,10 @@ gem "danger", "4.2.1"
 1. Execute `$ bundle  install`
 1. Create a `Dangerfile` with
 ```ruby
+# Copy Paste Detector
+# Possible languages are "obejctivec", "swift", "java", "ruby", "ecmascript"(JavaScript)
+# Directory is your project folder name
+@cpd_opts = { language: "swift", directory: "App"}
 @platform = "nodejs" # Possible platforms are "nodejs", "ios", "android" and "web"
 danger.import_dangerfile(github: "indigotech/danger")
 ```
@@ -67,6 +71,7 @@ $ bundle exec danger --dangerfile=path/to/Dangerfile
 - [x] Warn when Amazon Secret Key is hardcoded
 - [x] Warn when `Dangerfile` was modified
 - [x] Warn when `http://` is used
+- [x] Warn for increase in code duplication detection
 
 ### Node
 
