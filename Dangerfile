@@ -17,8 +17,8 @@ def checkCpd(opts)
 
   @minimum_tokens = 100
   @target_branch = ENV['TRAVIS_BRANCH'] || "develop"
-  @check_cpd = true if @language && @directory
-  message("Vars for Copy Paste Detector were not set") if !@check_cpd
+  @will_check_cpd = true if @language && @directory
+  message("Vars for Copy Paste Detector were not set") if !@will_check_cpd
 end
 
 def checkPmdInstalled
@@ -475,6 +475,6 @@ end
 checkPmdInstalled
 
 # Check if duplicated code increased
-if @check_cdp
+if @will_check_cpd
   warn("This PR has more duplicated code than your target branch, therefore it could have some code quality issues") if has_more_duplicated_code?
 end
