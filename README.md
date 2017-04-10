@@ -22,6 +22,17 @@ gem "danger", "4.2.1"
 danger.import_dangerfile(github: "indigotech/danger")
 ```
 
+### PMD/Copy Paste Detector
+
+If your project is running on Travis CI, you will need to add `pmd` installation in your `.travis.yml`
+```
+...
+install:
+- bundle install
+- brew install pmd
+...
+```
+
 ## Usage Locally
 
 ### Setup

@@ -24,7 +24,7 @@ end
 def checkPmdInstalled
   installed = system("which pmd")
   if !installed
-    message("`pmd` not found. Install `pmd` to use Copy Paste Detector.")
+    message("`pmd` not found. Install `pmd` to use Copy Paste Detector. https://github.com/indigotech/danger/tree/master#pmdcopy-paste-detector")
   else
     checkCpd(@cpd_opts)
   end
