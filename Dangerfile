@@ -7,6 +7,10 @@ if !defined? @platform
   @platform = "" # avoid future crashes
 end
 
+########################
+#   FUNCTIONS SECTION  #
+########################
+
 def checkCpd(opts)
   @language = opts[:language]
   @directory = opts[:directory]
@@ -25,10 +29,6 @@ def checkPmdInstalled
     checkCpd(@cpd_opts)
   end
 end
-
-########################
-#   FUNCTIONS SECTION  #
-########################
 
 def checkForFile(file)
   checkForFileCommon(file)
@@ -95,7 +95,27 @@ def exceptionMessages(file)
   end
 end
 
-checkPmdInstalled
+# Functions to check code duplication
+def has_more_duplicated_code?
+    current_branch_cpd_results = run_cpd_on_current_branch
+    target_branch_cpd_results = run_cpd_on_target_branch
+    Dir.chdir("..")
+    FileUtils.rm_rf "tmp"
+    current_branch_cpd_results > target_branch_cpd_results
+end
+
+def run_cpd_on_current_branch
+  `pmd cpd --language #{@language} --minimum-tokens #{@minimum_tokens} --files #{@directory} --ignore-identifiers | grep tokens | wc -l`.to_i
+end
+
+def run_cpd_on_target_branch
+  dir_path = Dir.pwd
+  Dir.mkdir("tmp")
+  `cp -r "#{dir_path}"/.git tmp`
+  Dir.chdir("tmp")
+  `git reset --hard origin/#{@target_branch}`
+  `pmd cpd --language #{@language} --minimum-tokens  #{@minimum_tokens} --files #{@directory} --ignore-identifiers | grep tokens | wc -l`.to_i
+end
 
 ########################
 #    NODE FUNCTIONS    #
@@ -178,28 +198,6 @@ def validateSpecificExtensions(file)
       exceptionMessages(file)
     end
   end
-end
-
-# Functions to check code duplication
-def has_more_duplicated_code?
-    current_branch_cpd_results = run_cpd_on_current_branch
-    target_branch_cpd_results = run_cpd_on_target_branch
-    Dir.chdir("..")
-    FileUtils.rm_rf "tmp"
-    current_branch_cpd_results > target_branch_cpd_results
-end
-
-def run_cpd_on_current_branch
-  `pmd cpd --language #{@language} --minimum-tokens #{@minimum_tokens} --files #{@directory} --ignore-identifiers | grep tokens | wc -l`.to_i
-end
-
-def run_cpd_on_target_branch
-  dir_path = Dir.pwd
-  Dir.mkdir("tmp")
-  `cp -r "#{dir_path}"/.git tmp`
-  Dir.chdir("tmp")
-  `git reset --hard origin/#{@target_branch}`
-  `pmd cpd --language #{@language} --minimum-tokens  #{@minimum_tokens} --files #{@directory} --ignore-identifiers | grep tokens | wc -l`.to_i
 end
 
 ########################
@@ -473,6 +471,8 @@ modified_files.each do |file|
     exceptionMessages(file)
   end
 end
+
+checkPmdInstalled
 
 # Check if duplicated code increased
 if @check_cdp
