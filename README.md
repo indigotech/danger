@@ -15,7 +15,7 @@ gem "danger", "4.2.1"
 1. Create a `Dangerfile` with
 ```ruby
 @platform = "nodejs" # Possible platforms are "nodejs", "ios", "android" and "web"
-danger.import_dangerfile(github: "indigotech/danger", branch: "1.0.1") # replace version by latest on "Releases" section
+danger.import_dangerfile(github: "indigotech/danger", branch: "2.0.0") # replace version by latest on "Releases" section
 ```
 
 ## Usage Locally
@@ -44,7 +44,7 @@ $ bundle exec danger local
 
 ## Usage on CI
 
-1. Add angithub access token as `DANGER_GITHUB_API_TOKEN` environment variable to enable `Danger` to access Github PR and add comments. 
+1. Add angithub access token as `DANGER_GITHUB_API_TOKEN` environment variable to enable `Danger` to access Github PR and add comments.
   - If you already have a token variable you can use something like the following:
   ```bash
   export DANGER_GITHUB_API_TOKEN=$YOUR_CURRENT_GITHUB_TOKEN_VARIABLE
@@ -71,7 +71,7 @@ $ bundle exec danger --dangerfile=path/to/Dangerfile
 - [x] Warn when Amazon Secret Key is hardcoded
 - [x] Warn when `npm install -g` is used
 - [x] Warn when `.env` or `.nvmrc` files are modified
-- [x] Warn when `console.log` is added 
+- [x] Warn when `console.log` is added
 - [x] Warn when `package.json` was modified and `yarn.lock` or `shrinkwrap` was not
 - [x] Warn if node version is different between .travis.yml, .nvmrc, package.json and README (or just warn if node version has change just in one of these locations)
 - [x] At packages.json every package should have its version fixed (do not use ^ or ~), or explicitly set the major and minor versions (ie.: 1.2.x)
