@@ -303,7 +303,7 @@ def checkHardcodedNib(file)
     ext = File.extname(file)
     case ext
     when ".xib"
-      if line =~ /<color(?!.*(?:white="1"|white="0\.0"|red="0\.93725490196078431" green="0\.93725490196078431" blue="0\.95686274509803926" alpha="1"|red="0\.93725490199999995" green="0\.93725490199999995" blue="0\.95686274510000002" alpha="1"|red="0\.0" green="0\.0" blue="0\.0" alpha="1"|red="1" green="1" blue="1" alpha="1"|key="textColor" cocoaTouchSystemColor="darkTextColor"\/>|key="titleShadowColor"|cocoaTouchSystemColor|<nil|<view|userDefinedRuntimeAttribute|<string key="text"|image|<\/string>|<label)).*\/>/
+      if line =~ /<color(?!.*(?:white="1"|white="0\.0"|red="0\.93725490196078431" green="0\.93725490196078431" blue="0\.95686274509803926" alpha="1"|red="0\.93725490199999995" green="0\.93725490199999995" blue="0\.95686274510000002" alpha="1"|red="0\.0" green="0\.0" blue="0\.0"|red="1" green="1" blue="1" alpha="1"|key="textColor" cocoaTouchSystemColor="darkTextColor"\/>|key="titleShadowColor"|cocoaTouchSystemColor|<nil|<view|userDefinedRuntimeAttribute|<string key="text"|image|<\/string>|<label|<document)).*\/>/
         warn("Possible hardcoded color found in `#{file}` at `#{line}`")
       end
       if line =~ /<fontDescription(?!.*(?:key="fontDescription" type="system"|adjustsFontSizeToFit="NO"|minimumFontSize=|<\/customFonts>|<customFonts key="customFonts">)).*/
