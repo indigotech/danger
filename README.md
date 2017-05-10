@@ -91,6 +91,8 @@ $ bundle exec danger --dangerfile=path/to/Dangerfile
 - [x] Warn when `fatalError` is added
 - [x] Warn if Podfile has pods should not using fixed versions
 - [x] [Swift] Warn if forced unwrapping was found
+- [x] Warn if hardcoded font is used in `.xib`
+- [x] Warn if hardcoded color is used in `.xib`
 
 ### Android
 
