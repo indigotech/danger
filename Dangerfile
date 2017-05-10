@@ -38,6 +38,7 @@ end
 def checkForFileIos(file)
   checkTodo(file)
   validateSwiftFiles(file)
+  checkHardcodedNib(file)
 end
 
 def checkForFileAndroid(file)
@@ -292,6 +293,59 @@ def validateSwiftFiles(file)
       warn("`print(\"\")` was added in `#{file}` at line `#{line}`") if line =~ /print\(""\)/
       # Warn developers to use another alternatives
       warn("`fatalError` was added in `#{file}` at line `#{line}` is not possible use error handlers or throw an exception?") if line =~ /fatalError\(/
+    end
+  end
+end
+
+def checkHardcodedNib(file)
+  File.foreach(file) do |line|
+    line = line.gsub('\n','').strip
+    ext = File.extname(file)
+    case ext
+    when ".xib"
+    
+      color_white_1                  = "white=\"1\""
+      color_white_0                  = "white=\"0\.0\""
+      color_gray_arbitrary_1         = "red=\"0\.93725490196078431\" green=\"0\.93725490196078431\" blue=\"0\.95686274509803926\" alpha=\"1\""
+      color_gray_arbitrary_2         = "red=\"0\.93725490199999995\" green=\"0\.93725490199999995\" blue=\"0\.95686274510000002\" alpha=\"1\""
+      color_black                    = "red=\"0\.0\" green=\"0\.0\" blue=\"0\.0\""
+      color_white_2                  = "red=\"1\" green=\"1\" blue=\"1\" alpha=\"1\""
+      attr_text_color                = "key=\"textColor\" cocoaTouchSystemColor=\"darkTextColor\"\/>"
+      attr_title_shadow_color        = "key=\"titleShadowColor\""
+      cocoa_touch_system_color       = "cocoaTouchSystemColor"
+      tag_nil                        = "<nil"
+      tag_view                       = "<view"
+      user_defined_runtime_attribute = "userDefinedRuntimeAttribute"
+      tag_string                     = "<string key=\"text\""
+      image                          = "image"
+      tag_string_empty               = "<\/string>"
+      tag_label                      = "<label"
+      tag_document                   = "<document"
+
+      if line =~ /
+        <color(?!.*(?:#{Regexp.quote(color_white_1)}
+        | #{Regexp.quote(color_white_0)}
+        | #{Regexp.quote(color_gray_arbitrary_1)}
+        | #{Regexp.quote(color_gray_arbitrary_2)}
+        | #{Regexp.quote(color_black)}
+        | #{Regexp.quote(color_white_2)}
+        | #{Regexp.quote(attr_text_color)}
+        | #{Regexp.quote(attr_title_shadow_color)}
+        | #{Regexp.quote(cocoa_touch_system_color)}
+        | #{Regexp.quote(tag_nil)}
+        | #{Regexp.quote(tag_view)}
+        | #{Regexp.quote(user_defined_runtime_attribute)}
+        | #{Regexp.quote(tag_string)}
+        | #{Regexp.quote(image)}
+        | #{Regexp.quote(tag_string_empty)}
+        | #{Regexp.quote(tag_label)}
+        | #{Regexp.quote(tag_document)})).*\/>
+        /x
+        warn("Possible hardcoded color found in `#{file}` at `#{line}`")
+      end
+      if line =~ /<fontDescription(?!.*(?:key="fontDescription" type="system"|adjustsFontSizeToFit="NO"|minimumFontSize=|<\/customFonts>|<customFonts key="customFonts">)).*/
+        warn("Possible hardcoded font found in `#{file}` at `#{line}`")
+      end
     end
   end
 end
