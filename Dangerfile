@@ -303,7 +303,7 @@ def checkHardcodedNib(file)
     ext = File.extname(file)
     case ext
     when ".xib"
-    
+      
       color_white_1                  = "white=\"1\""
       color_white_0                  = "white=\"0\.0\""
       color_gray_arbitrary_1         = "red=\"0\.93725490196078431\" green=\"0\.93725490196078431\" blue=\"0\.95686274509803926\" alpha=\"1\""
@@ -322,6 +322,7 @@ def checkHardcodedNib(file)
       tag_label                      = "<label"
       tag_document                   = "<document"
 
+      # Warning hardcoded colors on nib files
       if line =~ /
         <color(?!.*(?:#{Regexp.quote(color_white_1)}
         | #{Regexp.quote(color_white_0)}
@@ -343,8 +344,13 @@ def checkHardcodedNib(file)
         /x
         warn("Possible hardcoded color found in `#{file}` at `#{line}`")
       end
+      # Warning hardcoded fonts on nib files
       if line =~ /<fontDescription(?!.*(?:key="fontDescription" type="system"|adjustsFontSizeToFit="NO"|minimumFontSize=|<\/customFonts>|<customFonts key="customFonts">)).*/
         warn("Possible hardcoded font found in `#{file}` at `#{line}`")
+      end
+      # Warning forbidden words on nib files
+      if line =~ /exclude|misplaced/
+        warn("The file: `#{file}` contains some suspicious keywords like `misplaced` or `exclude`")
       end
     end
   end
