@@ -171,7 +171,7 @@ def checkRebase(file)
 end
 
 def checkAmazonKeys(file)
-  rejected_files = ["yarn.lock", "Podfile.lock"]
+  rejected_files = ["yarn.lock", "Podfile.lock", "Gemfile.lock"]
   ext = File.extname(file)
   rejected_files << file if ext == (".xib")
   # Look for Amazon Secret keys in modified files
@@ -380,7 +380,7 @@ warn("Big PR") if git.lines_of_code > 500
 # Mainly to encourage writing up some reasoning about the PR, rather than
 # just leaving a title
 if github.pr_body.length < 5
-  fail "Please provide a summary in the Pull Request description"
+  warn "@#{github.pr_author} Please provide a summary in the Pull Request description"
 end
 
 # Common files
