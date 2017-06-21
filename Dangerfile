@@ -366,20 +366,6 @@ def checkHardcodedNib(file)
   end
 end
 
-def check_nib_files
-  (git.modified_files + git.added_files).each do |file|
-    begin
-      if file.end_with? ".xib"
-         next unless File.file?(file)
-        contents = File.read(file)
-        warn "The file: '#{file}' contains some suspicious keywords like 'misplaced' or 'exclude'" if contents =~ /exclude|misplaced/
-      end
-    rescue
-      message "Could not read file #{file}, does it really exist?"
-    end
-  end
-end
-
 def check_provisionings
   Dir["#{ENV['HOME']}/Library/MobileDevice/Provisioning Profiles/*"].each do |file|
     expiring_date = Date.parse `/usr/libexec/PlistBuddy -c 'Print :ExpirationDate' /dev/stdin <<< $(security cms -D -i #{file.sub ' ', '\ '} 2> /dev/null)`
