@@ -404,6 +404,11 @@ files_to_check += ["Cakefile", "fastlane/settings.yml.erb", "fastlane/Fastfile",
   message("`#{file}` modified")
 end
 
+if File.file?('.swiftlint.yml')
+    swiftlint.config_file = Dir.pwd + '/.swiftlint.yml'
+    swiftlint.lint_files
+end
+
 # Warn if 'Gemfile' was modified and 'Gemfile.lock' was not
 if modified_files.include?("Gemfile")
   if !modified_files.include?("Gemfile.lock")
