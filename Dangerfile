@@ -56,7 +56,7 @@ end
 def checkForFileWeb(file)
   checkForEnginesVersion(file)
   checkForNpmInstallGlobal(file)
-  validateSwiftFiles(file)
+  validateSpecificExtensions(file)
   checkForConsoleLog(file)
 end
 
