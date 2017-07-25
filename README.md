@@ -15,7 +15,7 @@ gem "danger", "4.2.1"
 1. Create a `Dangerfile` with
 ```ruby
 @platform = "nodejs" # Possible platforms are "nodejs", "ios", "android" and "web"
-danger.import_dangerfile(github: "indigotech/danger", branch: "master")
+danger.import_dangerfile(github: "indigotech/danger")
 ```
 
 ## Usage Locally

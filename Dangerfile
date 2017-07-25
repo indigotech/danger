@@ -33,6 +33,7 @@ def checkForFileNode(file)
   checkForNpmInstallGlobal(file)
   checkForEnginesVersion(file)
   validateSpecificExtensions(file)
+  checkForConsoleLog(file)
 end
 
 def checkForFileIos(file)
@@ -55,7 +56,8 @@ end
 def checkForFileWeb(file)
   checkForEnginesVersion(file)
   checkForNpmInstallGlobal(file)
-  validateSwiftFiles(file)
+  validateSpecificExtensions(file)
+  checkForConsoleLog(file)
 end
 
 def checkForRegex(file, regex)
@@ -99,6 +101,14 @@ def checkForWeaklyTypedFunctionReturn(file)
   returnAnyMatches = checkForRegex(file, /\+.*<any>/i)
   returnAnyMatches.each do |returnAnyMatch|
     warn("Possibly returning 'any' in a function, prefer having a strongly typed return. `#{file}` at line `#{returnAnyMatch}`.") if returnAnyMatch
+  end
+end
+
+def checkForConsoleLog(file)
+  # Warn when dev add `console.log`
+  returnConsoleLogMatches = checkForRegex(file, /\+\s*console\.log.*/)
+  returnConsoleLogMatches.each do |returnConsoleLogMatch|
+    warn("`console.log` was added in `#{file}` at line `#{returnConsoleLogMatch}`.") if returnConsoleLogMatch
   end
 end
 
@@ -394,7 +404,6 @@ files_to_check += ["Cakefile", "fastlane/settings.yml.erb", "fastlane/Fastfile",
   message("`#{file}` modified")
 end
 
-
 # Warn if 'Gemfile' was modified and 'Gemfile.lock' was not
 if modified_files.include?("Gemfile")
   if !modified_files.include?("Gemfile.lock")
@@ -408,10 +417,6 @@ if @platform == "ios"
   validatePodfile(modified_files)
   checkCakefileMissconfig("Cakefile") if modified_files.include?("Cakefile")
   validatePlistFiles(modified_files)
-elsif @platform == "nodejs"
-  # Warn if 'console.log' was added
-  diff = github.pr_diff
-  warn("`console.log` added") if diff =~ /\+\s*console\.log/
 end
 
 validatePackageJson(modified_files, github.pr_diff) if @platform == "nodejs" || @platform == "web"
