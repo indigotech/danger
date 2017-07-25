@@ -98,6 +98,10 @@ $ bundle exec danger --dangerfile=path/to/Dangerfile
 
 ### Android
 
+- [x] Warn when `.gradle` or `Manifest.xml` files are modified
+
+### Web
+
 - [x] Warn if some files/folders to be changed/committed like `yarn.lock`, `docker-compose.yml`, `Procfile`, `npm-shrinkwrap.json`, `node_modules`, `env.coffee`
 - [x] Warn when `npm install -g` is used
 - [x] Warn when `.env` or `.nvmrc` files are modified
@@ -106,10 +110,6 @@ $ bundle exec danger --dangerfile=path/to/Dangerfile
 - [x] Warn if node version is different between .travis.yml, .nvmrc, package.json and README (or just warn if node version has change just in one of these locations)
 - [x] At packages.json every package should have its version fixed (do not use ^ or ~), or explicitly set the major and minor versions (ie.: 1.2.x)
 - [x] [TypeScript] Warn if using `<any>` as return type.
-- [x] Warn when `.gradle` or `Manifest.xml` files are modified
-
-### Web
-
 - [x] Warn if CSS files were changed
 
 ## Troubleshooting
