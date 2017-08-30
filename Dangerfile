@@ -369,7 +369,7 @@ end
 ###########################################
 
 # moved files have a pattern that were  messing with file reading
-modified_files = git.modified_files.select { |path| !path.include? "=>" }
+modified_files = git.modified_files.select { |path| !path.nil? && !path.include?("=>") }
 
 # Comparing only readable files
 modified_files = modified_files.reject { |f|  /.*\.(tgz|png|jpg|gem)/.match(File.extname(f)) }
