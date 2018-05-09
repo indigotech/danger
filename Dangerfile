@@ -1,4 +1,5 @@
 require 'find'
+require 'json'
 
 if !defined? @platform
   warn("No platform was provided to perform platform specific assertions")
@@ -420,6 +421,19 @@ if @platform == "ios"
 end
 
 validatePackageJson(modified_files, github.pr_diff) if @platform == "nodejs" || @platform == "web"
+
+# Warn about the outdated dependecies on the projects that use yarn
+def checkOutdatedDependecies()
+  filePath = 'outdated-dependency.json'
+  `bundle exec yarn outdated --json > #{filePath}`
+  if File.file?(filePath)
+    file = File.read(filePath)
+    dataJson = JSON.parse(file)
+    message(dataJson["data"])
+  end
+end
+
+checkOutdatedDependecies()
 
 modified_files.each do |file|
   begin
