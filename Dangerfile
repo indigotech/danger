@@ -429,8 +429,46 @@ def checkOutdatedDependecies()
   if File.file?(filePath)
     file = File.read(filePath)
     dataJson = JSON.parse(file)
-    message(dataJson["data"])
+    str = formatOutdatedDepedenciesMessage(dataJson)
+    message(str)
   end
+end
+
+# Return a string based on the dataJson
+# "data":{  
+#   "head":[  
+#      "Package",
+#      "Current",
+#      "Wanted",
+#      "Latest",
+#      "Package Type",
+#      "URL"
+#   ],
+#   "body":[  
+#      [  
+#         "danger",
+#         "3.6.4",
+#         "3.6.6",
+#         "3.6.6",
+#         "devDependencies",
+#         "https://github.com/danger/danger-js#readme"
+#      ]
+#   ]
+# }
+def formatOutdatedDepedenciesMessage(dataJson)
+  body = dataJson["data"]["body"]
+  if body.length > 0 
+    header = "%-20s %-10s %-10s \r\n" % ["Package", "Current", "Latest"]
+    bodyDependencies = ""
+    body.each do |dependency|
+      bodyDependencies += "%-20s %-10s %-10s \r\n" % [dependency[0], dependency[1], dependency[3]]
+    end
+    return "The following dependencies are outdated:\r\n" +
+           header + 
+           bodyDependencies
+  end
+  return ""
+
 end
 
 checkOutdatedDependecies()
