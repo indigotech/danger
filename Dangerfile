@@ -424,13 +424,17 @@ validatePackageJson(modified_files, github.pr_diff) if @platform == "nodejs" || 
 
 # Warn about the outdated dependecies on the projects that use yarn
 def checkOutdatedDependecies()
-  filePath = 'outdated-dependency.json'
-  `bundle exec yarn outdated --json > #{filePath}`
-  if File.file?(filePath)
-    file = File.read(filePath)
-    dataJson = JSON.parse(file)
-    str = formatOutdatedDepedenciesMessage(dataJson)
-    message(str)
+  begin # try block
+    pipeData = %x[bundle exec yarn outdated --json]
+    pipeData.each_line do |line|
+      dataJson = JSON.parse(line)
+      if dataJson["type"].eql? "table"
+        output = formatOutdatedDepedenciesMessage(dataJson)
+        warn(output)
+        break
+      end
+    end
+  rescue # catch
   end
 end
 
