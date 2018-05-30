@@ -462,10 +462,10 @@ end
 def formatOutdatedDepedenciesMessage(dataJson)
   body = dataJson["data"]["body"]
   if body.length > 0 
-    header = "%-20s %-10s %-10s \r\n" % ["Package", "Current", "Latest"]
+    header = "%-30s %-10s %-10s %-10s \r\n" % ["Package name", "Current", "Wanted", "Latest"]
     bodyDependencies = ""
     body.each do |dependency|
-      bodyDependencies += "%-20s %-10s %-10s \r\n" % [dependency[0], dependency[1], dependency[3]]
+      bodyDependencies += "%-30s %-10s %-10s %-10s \r\n" % [dependency[0], dependency[1], dependency[2], dependency[3]]
     end
     return "The following dependencies are outdated:\r\n" +
            header + 
